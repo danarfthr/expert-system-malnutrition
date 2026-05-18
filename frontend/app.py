@@ -8,7 +8,6 @@ st.set_page_config(
 
 API_URL = "http://localhost:8000"
 
-
 st.title("Sistem Pakar Diagnosa Gizi Buruk pada Balita")
 st.markdown(
     "Diagnosa dini malnutrition pada anak balita menggunakan Case-Based Reasoning (CBR)"
@@ -87,6 +86,39 @@ if st.session_state.diagnosis_result:
     if result.get("message"):
         st.info(result["message"])
 
+    st.divider()
+    st.subheader("Detail Perhitungan Similarity")
+
+    if result.get("per_disease"):
+        for disease in result["per_disease"]:
+            with st.expander(
+                f"{disease['code']} - {disease['name']} "
+                f"{'✓' if disease['is_winner'] else ''} "
+                f"({disease['similarity']*100:.1f}%)"
+            ):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.markdown("**Matched Symptoms:**")
+                    if disease["matched"]:
+                        st.text(", ".join(disease["matched"]))
+                    else:
+                        st.text("-")
+
+                    st.markdown("**Unmatched Symptoms:**")
+                    if disease["unmatched"]:
+                        st.text(", ".join(disease["unmatched"]))
+                    else:
+                        st.text("-")
+
+                with col_b:
+                    st.markdown("**Perhitungan:**")
+                    st.code(disease["formula"], language=None)
+
+                    st.markdown("**Ringkasan:**")
+                    st.text(
+                        f"Matched: {disease['matched_weight']} / {disease['total_weight']}"
+                    )
+
     if expert_mode and result["disease_code"]:
         st.divider()
         st.subheader("Tambah Kasus Baru ke Basis Pengetahuan")
@@ -104,7 +136,7 @@ if st.session_state.diagnosis_result:
             )
             expert_decision = st.radio(
                 "Keputusan Pakar",
-                ["Konfirmasi sama", "Ubah diagnosis", "Tolak"],
+                ["Konfirmasi sama", "Tolak"],
                 horizontal=True,
             )
             retain_submitted = st.form_submit_button("💾 Simpan ke Basis Kasus")
@@ -128,10 +160,6 @@ if st.session_state.diagnosis_result:
                             st.error(f"Gagal menyimpan: {resp.text}")
                     except Exception as e:
                         st.error(f"Error: {e}")
-                elif expert_decision == "Ubah diagnosis":
-                    st.info(
-                        "Fitur ubah diagnosis akan meminta input kode penyakit baru."
-                    )
                 else:
                     st.info("Diagnosis ditolak. Kasus tidak disimpan.")
 
