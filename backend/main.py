@@ -79,7 +79,9 @@ def get_symptoms() -> SymptomsListResponse:
 
 
 @app.post("/diagnose", response_model=DiagnosisResponse)
-def diagnose(request: DiagnosisRequest, threshold: float = DEFAULT_THRESHOLD) -> DiagnosisResponse:
+def diagnose(
+    request: DiagnosisRequest, threshold: float = DEFAULT_THRESHOLD
+) -> DiagnosisResponse:
     symptoms_data = load_symptoms()
     case_base = load_case_base()
 
@@ -112,7 +114,10 @@ def diagnose(request: DiagnosisRequest, threshold: float = DEFAULT_THRESHOLD) ->
 @app.get("/cases", response_model=list[CaseEntry])
 def get_cases() -> list[CaseEntry]:
     case_base = load_case_base()
-    return [CaseEntry(code=d["code"], name=d["name"], symptoms=d["symptoms"]) for d in case_base["diseases"]]
+    return [
+        CaseEntry(code=d["code"], name=d["name"], symptoms=d["symptoms"])
+        for d in case_base["diseases"]
+    ]
 
 
 @app.post("/cases", response_model=CaseEntry, status_code=status.HTTP_201_CREATED)
@@ -126,7 +131,11 @@ def add_case(request: NewCaseRequest) -> CaseEntry:
                 detail=f"Penyakit dengan kode {request.code} sudah ada.",
             )
 
-    new_case = {"code": request.code, "name": request.name, "symptoms": request.symptoms}
+    new_case = {
+        "code": request.code,
+        "name": request.name,
+        "symptoms": request.symptoms,
+    }
     case_base = retain(new_case, case_base)
     save_case_base(case_base)
 

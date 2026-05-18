@@ -10,7 +10,9 @@ API_URL = "http://localhost:8000"
 
 
 st.title("Sistem Pakar Diagnosa Gizi Buruk pada Balita")
-st.markdown("Diagnosa dini malnutrition pada anak balita menggunakan Case-Based Reasoning (CBR)")
+st.markdown(
+    "Diagnosa dini malnutrition pada anak balita menggunakan Case-Based Reasoning (CBR)"
+)
 
 if "diagnosis_result" not in st.session_state:
     st.session_state.diagnosis_result = None
@@ -24,7 +26,9 @@ if not st.session_state.symptoms_data:
         if response.status_code == 200:
             st.session_state.symptoms_data = response.json()["symptoms"]
     except Exception:
-        st.error("Tidak dapat terhubung ke server. Pastikan backend sedang berjalan di port 8000.")
+        st.error(
+            "Tidak dapat terhubung ke server. Pastikan backend sedang berjalan di port 8000."
+        )
         st.stop()
 
 symptoms = st.session_state.symptoms_data
@@ -40,7 +44,9 @@ with st.form("diagnosis_form"):
     cols = st.columns(3)
     for idx, symptom in enumerate(symptoms):
         with cols[idx % 3]:
-            if st.checkbox(f"**{symptom['code']}** - {symptom['name']}", key=symptom["code"]):
+            if st.checkbox(
+                f"**{symptom['code']}** - {symptom['name']}", key=symptom["code"]
+            ):
                 selected_symptoms.append(symptom["code"])
 
     submitted = st.form_submit_button("🩺 Diagnosa", use_container_width=True)
@@ -85,8 +91,12 @@ if st.session_state.diagnosis_result:
         st.divider()
         st.subheader("Tambah Kasus Baru ke Basis Pengetahuan")
         with st.form("retain_form"):
-            new_code = st.text_input("Kode Penyakit", value=result["disease_code"], disabled=True)
-            new_name = st.text_input("Nama Penyakit", value=result["disease_name"], disabled=True)
+            new_code = st.text_input(
+                "Kode Penyakit", value=result["disease_code"], disabled=True
+            )
+            new_name = st.text_input(
+                "Nama Penyakit", value=result["disease_name"], disabled=True
+            )
             new_symptoms = st.text_area(
                 "Gejala",
                 value=", ".join(selected_symptoms),
@@ -104,16 +114,24 @@ if st.session_state.diagnosis_result:
                     try:
                         resp = __import__("requests").post(
                             f"{API_URL}/cases",
-                            json={"code": new_code, "name": new_name, "symptoms": selected_symptoms},
+                            json={
+                                "code": new_code,
+                                "name": new_name,
+                                "symptoms": selected_symptoms,
+                            },
                         )
                         if resp.status_code == 201:
-                            st.success("Kasus baru berhasil disimpan ke basis pengetahuan!")
+                            st.success(
+                                "Kasus baru berhasil disimpan ke basis pengetahuan!"
+                            )
                         else:
                             st.error(f"Gagal menyimpan: {resp.text}")
                     except Exception as e:
                         st.error(f"Error: {e}")
                 elif expert_decision == "Ubah diagnosis":
-                    st.info("Fitur ubah diagnosis akan meminta input kode penyakit baru.")
+                    st.info(
+                        "Fitur ubah diagnosis akan meminta input kode penyakit baru."
+                    )
                 else:
                     st.info("Diagnosis ditolak. Kasus tidak disimpan.")
 
