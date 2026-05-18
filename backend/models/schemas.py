@@ -9,12 +9,27 @@ class DiagnosisRequest(BaseModel):
     ]
 
 
+class PerDiseaseDetail(BaseModel):
+    code: str
+    name: str
+    symptoms: list[str]
+    matched: list[str]
+    unmatched: list[str]
+    matched_weight: int
+    total_weight: int
+    similarity: float
+    formula: str
+    is_winner: bool
+
+
 class DiagnosisResponse(BaseModel):
     disease_code: str | None
     disease_name: str | None
     similarity: float
     requires_review: bool
     message: str | None = None
+    input_symptoms: list[str]
+    per_disease: list[PerDiseaseDetail]
 
 
 class DiseaseInfo(BaseModel):

@@ -4,6 +4,7 @@ from .schemas import (
     DiagnosisResponse,
     DiseaseInfo,
     NewCaseRequest,
+    PerDiseaseDetail,
     SymptomInfo,
     SymptomsListResponse,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "DiagnosisResponse",
     "DiseaseInfo",
     "NewCaseRequest",
+    "PerDiseaseDetail",
     "SymptomInfo",
     "SymptomsListResponse",
 ]
