@@ -1,0 +1,19 @@
+{
+  "G01": {"name": "Edema", "name_en": "Edema (generalized swelling)", "weight": 5},
+  "G02": {"name": "Diare", "name_en": "Diarrhea", "weight": 3},
+  "G03": {"name": "Perut buncit", "name_en": "Distended/bloated abdomen", "weight": 5},
+  "G04": {"name": "Tubuh kurus", "name_en": "Emaciated/very thin body", "weight": 5},
+  "G05": {"name": "Perubahan mental", "name_en": "Mental status change (apathy, irritability)", "weight": 5},
+  "G06": {"name": "Massa otot mengecil", "name_en": "Muscle mass wasting", "weight": 3},
+  "G07": {"name": "Berat dan tinggi badan susah bertambah", "name_en": "Difficulty gaining weight and height", "weight": 5},
+  "G08": {"name": "Kelainan kulit (bercak merah muda)", "name_en": "Skin abnormality (pink/reddish patches)", "weight": 3},
+  "G09": {"name": "Rambut kering atau kusam", "name_en": "Dry or dull hair", "weight": 1},
+  "G10": {"name": "Rambut tipis kemerahan", "name_en": "Thin reddish hair (resembling corn silk)", "weight": 5},
+  "G11": {"name": "Pandangan mata sayu", "name_en": "Dull/sad eye gaze", "weight": 3},
+  "G12": {"name": "Tubuh mengandung banyak cairan", "name_en": "Excess fluid retention in the body", "weight": 5},
+  "G13": {"name": "Tulang yang menonjol (tulang iga dan bahu)", "name_en": "Prominent bones (ribs and shoulders visible)", "weight": 5},
+  "G14": {"name": "Kulit lengan, paha, dan bokong tampak kendur", "name_en": "Loose/sagging skin on arms, thighs, and buttocks", "weight": 3},
+  "G15": {"name": "Wajah sayu", "name_en": "Sad/sunken facial appearance", "weight": 5},
+  "G16": {"name": "Wajah seperti orang tua", "name_en": "Face resembles that of an elderly person", "weight": 1},
+  "G17": {"name": "Kelelahan", "name_en": "Fatigue/exhaustion", "weight": 3}
+}
