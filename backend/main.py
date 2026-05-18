@@ -112,8 +112,12 @@ def diagnose(
     ]
 
     return DiagnosisResponse(
-        disease_code=result["diagnosis"]["disease_code"] if result["diagnosis"] else None,
-        disease_name=result["diagnosis"]["disease_name"] if result["diagnosis"] else None,
+        disease_code=result["diagnosis"]["disease_code"]
+        if result["diagnosis"]
+        else None,
+        disease_name=result["diagnosis"]["disease_name"]
+        if result["diagnosis"]
+        else None,
         similarity=result["similarity"],
         requires_review=result["requires_review"],
         message=result.get("message"),

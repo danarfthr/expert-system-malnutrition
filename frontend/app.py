@@ -94,7 +94,7 @@ if st.session_state.diagnosis_result:
             with st.expander(
                 f"{disease['code']} - {disease['name']} "
                 f"{'✓' if disease['is_winner'] else ''} "
-                f"({disease['similarity']*100:.1f}%)"
+                f"({disease['similarity'] * 100:.1f}%)"
             ):
                 col_a, col_b = st.columns(2)
                 with col_a:
