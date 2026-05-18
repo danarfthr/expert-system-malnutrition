@@ -38,11 +38,13 @@ Do not implement a separate CF module. The similarity score is the confidence me
 ```
 .
 ├── backend/
+│   ├── Dockerfile        # Backend container image
 │   ├── main.py            # FastAPI entry point
 │   ├── cbr_engine.py      # Core CBR/NNR logic (decoupled from routing)
 │   ├── models/            # Pydantic schemas
 │   └── data/              # case_base.json, symptom_weights.json
 ├── frontend/
+│   ├── Dockerfile        # Frontend container image
 │   └── app.py             # Streamlit UI
 ├── tests/
 │   └── test_cbr.py
