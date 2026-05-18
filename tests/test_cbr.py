@@ -1,5 +1,3 @@
-import pytest
-
 from backend.cbr_engine import calculate_similarity, retrieve, retain
 
 
@@ -28,7 +26,19 @@ CASE_BASE = {
         {
             "code": "GZ01",
             "name": "Kwashiorkor",
-            "symptoms": ["G01", "G02", "G03", "G05", "G06", "G07", "G08", "G09", "G10", "G11", "G17"],
+            "symptoms": [
+                "G01",
+                "G02",
+                "G03",
+                "G05",
+                "G06",
+                "G07",
+                "G08",
+                "G09",
+                "G10",
+                "G11",
+                "G17",
+            ],
         },
         {
             "code": "GZ02",
@@ -53,7 +63,9 @@ class TestCalculateSimilarity:
     def test_no_match_returns_zero(self):
         input_symptoms = ["G01", "G02"]
         case_symptoms = ["G03", "G04"]
-        similarity, numerator = calculate_similarity(input_symptoms, case_symptoms, WEIGHTS)
+        similarity, numerator = calculate_similarity(
+            input_symptoms, case_symptoms, WEIGHTS
+        )
         assert similarity == 0.0
 
     def test_partial_match_returns_correct_value(self):
@@ -61,7 +73,9 @@ class TestCalculateSimilarity:
         case_symptoms = ["G01", "G02", "G03"]
         total_weight = WEIGHTS["G01"] + WEIGHTS["G02"] + WEIGHTS["G03"]
         expected = (WEIGHTS["G01"] + WEIGHTS["G02"]) / total_weight
-        similarity, numerator = calculate_similarity(input_symptoms, case_symptoms, WEIGHTS)
+        similarity, numerator = calculate_similarity(
+            input_symptoms, case_symptoms, WEIGHTS
+        )
         assert similarity == expected
         assert numerator == WEIGHTS["G01"] + WEIGHTS["G02"]
 
@@ -73,7 +87,19 @@ class TestCalculateSimilarity:
 
 class TestRetrieve:
     def test_returns_highest_similarity_disease(self):
-        input_symptoms = ["G01", "G02", "G03", "G05", "G06", "G07", "G08", "G09", "G10", "G11", "G17"]
+        input_symptoms = [
+            "G01",
+            "G02",
+            "G03",
+            "G05",
+            "G06",
+            "G07",
+            "G08",
+            "G09",
+            "G10",
+            "G11",
+            "G17",
+        ]
         result = retrieve(input_symptoms, CASE_BASE, WEIGHTS, threshold=0.7)
         assert result["diagnosis"]["disease_code"] == "GZ01"
         assert result["diagnosis"]["disease_name"] == "Kwashiorkor"
@@ -122,7 +148,9 @@ class TestRetain:
         assert updated["diseases"][0]["name"] == "TestDisease"
 
     def test_retain_returns_modified_case_base(self):
-        case_base = {"diseases": [{"code": "GZ01", "name": "Existing", "symptoms": ["G01"]}]}
+        case_base = {
+            "diseases": [{"code": "GZ01", "name": "Existing", "symptoms": ["G01"]}]
+        }
         new_case = {"code": "GZ04", "name": "NewCase", "symptoms": ["G02"]}
         result = retain(new_case, case_base)
         assert len(result["diseases"]) == 2

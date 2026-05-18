@@ -1,8 +1,3 @@
-from typing import Annotated
-
-import numpy as np
-
-
 def calculate_similarity(
     input_symptoms: list[str],
     case_symptoms: list[str],
@@ -12,9 +7,7 @@ def calculate_similarity(
         return 0.0, 0
 
     matched_weight_sum = sum(
-        weights[symptom]
-        for symptom in case_symptoms
-        if symptom in input_symptoms
+        weights[symptom] for symptom in case_symptoms if symptom in input_symptoms
     )
     total_weight_sum = sum(weights[symptom] for symptom in case_symptoms)
 
@@ -39,13 +32,15 @@ def retrieve(
         symptoms = disease["symptoms"]
 
         similarity, numerator = calculate_similarity(input_symptoms, symptoms, weights)
-        results.append({
-            "disease_code": code,
-            "disease_name": name,
-            "symptoms": symptoms,
-            "similarity": similarity,
-            "numerator": numerator,
-        })
+        results.append(
+            {
+                "disease_code": code,
+                "disease_name": name,
+                "symptoms": symptoms,
+                "similarity": similarity,
+                "numerator": numerator,
+            }
+        )
 
     results.sort(key=lambda x: (x["similarity"], x["numerator"]), reverse=True)
 
