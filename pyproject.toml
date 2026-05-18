@@ -1,7 +1,7 @@
 [project]
 name = "sp-3"
 version = "0.1.0"
-description = "Add your description here"
+description = "Expert system for early diagnosis of malnutrition in toddlers using CBR"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -12,3 +12,7 @@ dependencies = [
     "streamlit>=1.57.0",
     "uvicorn>=0.47.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
