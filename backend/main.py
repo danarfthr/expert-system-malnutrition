@@ -10,6 +10,7 @@ from backend.models import (
     DiagnosisRequest,
     DiagnosisResponse,
     NewCaseRequest,
+    PerDiseaseDetail,
     SymptomInfo,
     SymptomsListResponse,
 )
@@ -94,20 +95,30 @@ def diagnose(
         threshold=threshold,
     )
 
-    if result["diagnosis"] is None:
-        return DiagnosisResponse(
-            disease_code=None,
-            disease_name=None,
-            similarity=result["similarity"],
-            requires_review=True,
-            message=result.get("message"),
+    per_disease = [
+        PerDiseaseDetail(
+            code=d["code"],
+            name=d["name"],
+            symptoms=d["symptoms"],
+            matched=d["matched"],
+            unmatched=d["unmatched"],
+            matched_weight=d["matched_weight"],
+            total_weight=d["total_weight"],
+            similarity=d["similarity"],
+            formula=d["formula"],
+            is_winner=d["is_winner"],
         )
+        for d in result.get("per_disease", [])
+    ]
 
     return DiagnosisResponse(
-        disease_code=result["diagnosis"]["disease_code"],
-        disease_name=result["diagnosis"]["disease_name"],
+        disease_code=result["diagnosis"]["disease_code"] if result["diagnosis"] else None,
+        disease_name=result["diagnosis"]["disease_name"] if result["diagnosis"] else None,
         similarity=result["similarity"],
         requires_review=result["requires_review"],
+        message=result.get("message"),
+        input_symptoms=result["input_symptoms"],
+        per_disease=per_disease,
     )
 
 

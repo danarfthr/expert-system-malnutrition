@@ -18,65 +18,92 @@ def calculate_similarity(
     return similarity, matched_weight_sum
 
 
+def _build_disease_detail(
+    input_symptoms: list[str],
+    disease: dict,
+    weights: dict[str, int],
+) -> dict:
+    symptoms = disease["symptoms"]
+    matched = [s for s in symptoms if s in input_symptoms]
+    unmatched = [s for s in symptoms if s not in input_symptoms]
+
+    matched_weight = sum(weights[s] for s in matched)
+    total_weight = sum(weights[s] for s in symptoms)
+    similarity = matched_weight / total_weight if total_weight > 0 else 0.0
+
+    matched_str = " + ".join(f"{s}:{weights[s]}" for s in matched) if matched else "0"
+    formula = f"({matched_str}) / ({total_weight}) = {matched_weight}/{total_weight} ≈ {similarity:.3f}"
+
+    return {
+        "code": disease["code"],
+        "name": disease["name"],
+        "symptoms": symptoms,
+        "matched": matched,
+        "unmatched": unmatched,
+        "matched_weight": matched_weight,
+        "total_weight": total_weight,
+        "similarity": similarity,
+        "formula": formula,
+    }
+
+
 def retrieve(
     input_symptoms: list[str],
     case_base: dict[str, list[dict]],
     weights: dict[str, int],
     threshold: float = 0.7,
 ) -> dict:
-    results: list[dict] = []
+    disease_details: list[dict] = []
 
     for disease in case_base["diseases"]:
-        code = disease["code"]
-        name = disease["name"]
-        symptoms = disease["symptoms"]
+        detail = _build_disease_detail(input_symptoms, disease, weights)
+        disease_details.append(detail)
 
-        similarity, numerator = calculate_similarity(input_symptoms, symptoms, weights)
-        results.append(
-            {
-                "disease_code": code,
-                "disease_name": name,
-                "symptoms": symptoms,
-                "similarity": similarity,
-                "numerator": numerator,
-            }
-        )
+    disease_details.sort(
+        key=lambda x: (x["similarity"], x["matched_weight"]), reverse=True
+    )
 
-    results.sort(key=lambda x: (x["similarity"], x["numerator"]), reverse=True)
+    for detail in disease_details:
+        detail["is_winner"] = detail == disease_details[0]
 
-    if not results:
+    if not disease_details:
         return {
             "diagnosis": None,
             "requires_review": True,
             "similarity": 0.0,
             "message": "Tidak ada data penyakit dalam basis pengetahuan.",
+            "input_symptoms": input_symptoms,
+            "per_disease": [],
         }
 
-    best = results[0]
+    best = disease_details[0]
     requires_review = best["similarity"] < threshold
 
-    if len(results) > 1:
-        second = results[1]
+    if len(disease_details) > 1:
+        second = disease_details[1]
         if (
             best["similarity"] == second["similarity"]
-            and best["numerator"] == second["numerator"]
+            and best["matched_weight"] == second["matched_weight"]
         ):
             return {
                 "diagnosis": None,
                 "requires_review": True,
                 "similarity": best["similarity"],
                 "message": "Hasil diagnosa ambigu. Silakan masukkan gejala tambahan.",
-                "candidates": results[:2],
+                "input_symptoms": input_symptoms,
+                "per_disease": disease_details,
             }
 
     return {
         "diagnosis": {
-            "disease_code": best["disease_code"],
-            "disease_name": best["disease_name"],
+            "disease_code": best["code"],
+            "disease_name": best["name"],
         },
         "requires_review": requires_review,
         "similarity": best["similarity"],
-        "numerator": best["numerator"],
+        "numerator": best["matched_weight"],
+        "input_symptoms": input_symptoms,
+        "per_disease": disease_details,
     }
 
 
