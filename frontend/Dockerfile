@@ -1,14 +1,29 @@
-FROM python:3.13-slim
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY frontend/package*.json ./
+RUN npm ci
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen
+FROM node:22-alpine AS builder
 
-COPY frontend/ ./frontend/
+WORKDIR /app
 
-EXPOSE 8501
+COPY --from=deps /app/node_modules ./node_modules
+COPY frontend/ ./
+RUN npm run build
 
-CMD ["uv", "run", "streamlit", "run", "frontend/app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]
