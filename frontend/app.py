@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 
 st.set_page_config(
@@ -6,12 +8,10 @@ st.set_page_config(
     layout="wide",
 )
 
-API_URL = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.title("Sistem Pakar Diagnosa Gizi Buruk pada Balita")
-st.markdown(
-    "Diagnosa dini malnutrition pada anak balita menggunakan Case-Based Reasoning (CBR)"
-)
+st.markdown("Diagnosa dini malnutrition pada anak balita menggunakan Hybrid RBR + CBR")
 
 if "diagnosis_result" not in st.session_state:
     st.session_state.diagnosis_result = None
@@ -70,26 +70,41 @@ if st.session_state.diagnosis_result:
 
     col1, col2 = st.columns(2)
     with col1:
+        st.metric("Metode", result["method"])
         if result["disease_code"]:
             st.metric("Kode Penyakit", result["disease_code"])
             st.metric("Nama Penyakit", result["disease_name"])
         else:
             st.warning("Tidak ada hasil diagnosa")
     with col2:
-        similarity_pct = result["similarity"] * 100
-        st.metric("Similarity", f"{similarity_pct:.1f}%")
-        if result["requires_review"]:
-            st.warning("⚠️ Memerlukan review pakar - similarity di bawah threshold 70%")
+        if result["similarity"] is None:
+            st.metric("Similarity", "-")
+            st.success("Aturan RBR cocok 100%; CBR tidak dijalankan")
         else:
-            st.success("✓ Similarity memenuhi threshold")
+            similarity_pct = result["similarity"] * 100
+            st.metric("Similarity", f"{similarity_pct:.1f}%")
+            if result["requires_review"]:
+                st.warning(
+                    "Memerlukan review pakar - similarity di bawah threshold 50%"
+                )
+            else:
+                st.success("Similarity memenuhi threshold")
 
     if result.get("message"):
         st.info(result["message"])
 
-    st.divider()
-    st.subheader("Detail Perhitungan Similarity")
+    if result.get("matched_rule"):
+        rule = result["matched_rule"]
+        st.divider()
+        st.subheader("Detail Aturan RBR")
+        st.markdown(f"**Aturan cocok:** {rule['rule_code']}")
+        st.markdown("**Gejala aturan yang terpenuhi:**")
+        st.text(", ".join(rule["matched_symptoms"]))
 
     if result.get("per_disease"):
+        st.divider()
+        st.subheader("Detail Perhitungan Similarity CBR")
+
         for disease in result["per_disease"]:
             with st.expander(
                 f"{disease['code']} - {disease['name']} "

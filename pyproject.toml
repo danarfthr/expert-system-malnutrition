@@ -1,7 +1,7 @@
 [project]
 name = "sp-3"
 version = "0.1.0"
-description = "Expert system for early diagnosis of malnutrition in toddlers using CBR"
+description = "Expert system for early diagnosis of malnutrition in toddlers using Hybrid RBR + CBR"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -16,3 +16,9 @@ dependencies = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.15",
+]

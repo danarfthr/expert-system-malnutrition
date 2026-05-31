@@ -51,7 +51,7 @@ def retrieve(
     input_symptoms: list[str],
     case_base: dict[str, list[dict]],
     weights: dict[str, int],
-    threshold: float = 0.7,
+    threshold: float = 0.5,
 ) -> dict:
     disease_details: list[dict] = []
 

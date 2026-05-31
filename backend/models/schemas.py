@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -22,13 +22,22 @@ class PerDiseaseDetail(BaseModel):
     is_winner: bool
 
 
+class MatchedRuleDetail(BaseModel):
+    rule_code: str
+    disease_code: str
+    disease_name: str
+    matched_symptoms: list[str]
+
+
 class DiagnosisResponse(BaseModel):
+    method: Literal["RBR", "CBR"]
     disease_code: str | None
     disease_name: str | None
-    similarity: float
+    similarity: float | None
     requires_review: bool
     message: str | None = None
     input_symptoms: list[str]
+    matched_rule: MatchedRuleDetail | None = None
     per_disease: list[PerDiseaseDetail]
 
 

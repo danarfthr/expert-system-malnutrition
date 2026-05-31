@@ -1,14 +1,17 @@
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.cbr_engine import retrieve, retain
+from backend.cbr_engine import retain
+from backend.hybrid_engine import diagnose_hybrid
 from backend.models import (
     CaseEntry,
     DiagnosisRequest,
     DiagnosisResponse,
+    MatchedRuleDetail,
     NewCaseRequest,
     PerDiseaseDetail,
     SymptomInfo,
@@ -19,7 +22,7 @@ load_dotenv()
 
 app = FastAPI(
     title="Sistem Pakar Diagnosa Gizi Buruk",
-    description="Expert system for early diagnosis of malnutrition in toddlers using CBR",
+    description="Expert system for early diagnosis of malnutrition in toddlers using Hybrid RBR + CBR",
     version="1.0.0",
 )
 
@@ -34,8 +37,9 @@ app.add_middleware(
 DATA_DIR = Path(__file__).parent / "data"
 SYMPTOMS_FILE = DATA_DIR / "symptom_weights.json"
 CASES_FILE = DATA_DIR / "case_base.json"
+RULES_FILE = DATA_DIR / "rules.json"
 
-DEFAULT_THRESHOLD = 0.7
+DEFAULT_THRESHOLD = float(os.getenv("THRESHOLD", "0.5"))
 
 
 def load_symptoms() -> dict[str, dict]:
@@ -52,6 +56,13 @@ def load_case_base() -> dict:
         return json.load(f)
 
 
+def load_rule_base() -> dict:
+    import json
+
+    with open(RULES_FILE) as f:
+        return json.load(f)
+
+
 def save_case_base(case_base: dict) -> None:
     import json
 
@@ -61,7 +72,7 @@ def save_case_base(case_base: dict) -> None:
 
 @app.get("/")
 def root() -> dict:
-    return {"message": "Sistem Pakar Diagnosa Gizi Buruk - CBR Backend"}
+    return {"message": "Sistem Pakar Diagnosa Gizi Buruk - Hybrid RBR + CBR Backend"}
 
 
 @app.get("/symptoms", response_model=SymptomsListResponse)
@@ -85,11 +96,13 @@ def diagnose(
 ) -> DiagnosisResponse:
     symptoms_data = load_symptoms()
     case_base = load_case_base()
+    rule_base = load_rule_base()
 
     weights = {code: data["weight"] for code, data in symptoms_data.items()}
 
-    result = retrieve(
+    result = diagnose_hybrid(
         input_symptoms=request.symptoms,
+        rule_base=rule_base,
         case_base=case_base,
         weights=weights,
         threshold=threshold,
@@ -111,7 +124,12 @@ def diagnose(
         for d in result.get("per_disease", [])
     ]
 
+    matched_rule = None
+    if result.get("matched_rule"):
+        matched_rule = MatchedRuleDetail(**result["matched_rule"])
+
     return DiagnosisResponse(
+        method=result["method"],
         disease_code=result["diagnosis"]["disease_code"]
         if result["diagnosis"]
         else None,
@@ -122,6 +140,7 @@ def diagnose(
         requires_review=result["requires_review"],
         message=result.get("message"),
         input_symptoms=result["input_symptoms"],
+        matched_rule=matched_rule,
         per_disease=per_disease,
     )
 

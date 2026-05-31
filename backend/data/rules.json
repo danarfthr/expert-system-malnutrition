@@ -1,0 +1,48 @@
+{
+  "rules": [
+    {
+      "code": "R01",
+      "disease_code": "GZ01",
+      "disease_name": "Kwashiorkor",
+      "conditions": [
+        "G01",
+        "G02",
+        "G03",
+        "G05",
+        "G06",
+        "G07",
+        "G08",
+        "G09",
+        "G10",
+        "G11",
+        "G15",
+        "G17"
+      ]
+    },
+    {
+      "code": "R02",
+      "disease_code": "GZ02",
+      "disease_name": "Marasmus",
+      "conditions": ["G02", "G04", "G05", "G13", "G14", "G15", "G16"]
+    },
+    {
+      "code": "R03",
+      "disease_code": "GZ03",
+      "disease_name": "Kwashiorkor-Marasmus",
+      "conditions": [
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G05",
+        "G06",
+        "G07",
+        "G08",
+        "G10",
+        "G12",
+        "G13",
+        "G15"
+      ]
+    }
+  ]
+}

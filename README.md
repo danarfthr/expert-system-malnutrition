@@ -1,6 +1,6 @@
-# Expert System for Child Nutritional Status Diagnosis (CBR)
+# Expert System for Child Nutritional Status Diagnosis (Hybrid RBR + CBR)
 
-Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Case-Based Reasoning (CBR) dengan Nearest Neighbor Retrieval dan Similarity Threshold.
+Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Hybrid Rule-Based Reasoning (RBR) dan Case-Based Reasoning (CBR). RBR Forward Chaining berjalan lebih dulu; CBR Nearest Neighbor Retrieval hanya berjalan jika tidak ada aturan RBR yang cocok 100%.
 
 ## Tech Stack
 
@@ -16,14 +16,18 @@ Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Cas
 ├── backend/
 │   ├── Dockerfile        # Backend container image
 │   ├── main.py            # FastAPI entry point
+│   ├── rbr_engine.py      # Forward Chaining rule evaluation
 │   ├── cbr_engine.py      # Core CBR/NNR logic
+│   ├── hybrid_engine.py   # RBR first, then CBR fallback
 │   ├── models/            # Pydantic schemas
-│   └── data/              # case_base.json, symptom_weights.json
+│   └── data/              # rules.json, case_base.json, symptom_weights.json
 ├── frontend/
 │   ├── Dockerfile        # Frontend container image
 │   └── app.py             # Streamlit UI
 ├── tests/
-│   └── test_cbr.py
+│   ├── test_rbr.py
+│   ├── test_cbr.py
+│   └── test_hybrid.py
 ├── docker-compose.yml
 ├── pyproject.toml
 └── README.md
@@ -64,13 +68,14 @@ docker-compose up --build
 | GET    | `/cases`     | List all disease cases             |
 | POST   | `/cases`     | Add a new validated case (expert) |
 
-## CBR Algorithm
+## Hybrid Algorithm
 
-1. **Retrieve** - Nearest Neighbor Retrieval (NNR):
+1. **RBR Forward Chaining** - If all symptoms in one rule are present, return that diagnosis and skip CBR.
+2. **CBR Retrieve** - If no RBR rule fires, run Nearest Neighbor Retrieval (NNR):
    `Similarity = sum(S_i * W_i) / sum(W_i)`
-2. **Reuse** - Return diagnosis of highest-similarity case
-3. **Revise** - Expert adjusts if similarity < 0.7 (threshold)
-4. **Retain** - Persist validated case back to knowledge base
+3. **Reuse** - Return diagnosis of highest-similarity case.
+4. **Revise** - Expert reviews if similarity < 0.5 (threshold).
+5. **Retain** - Persist validated case back to knowledge base.
 
 ## Disease Codes
 
