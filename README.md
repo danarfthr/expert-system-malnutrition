@@ -5,7 +5,7 @@ Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Hyb
 ## Tech Stack
 
 - **Backend:** Python 3.13+, FastAPI
-- **Frontend:** Next.js, React, TypeScript, Tailwind CSS
+- **Frontend:** Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Lenis
 - **Package Manager:** UV for Python backend, npm for Next.js frontend
 - **Deployment:** Docker & Docker Compose
 
@@ -23,7 +23,9 @@ Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Hyb
 │   └── data/              # rules.json, case_base.json, symptom_weights.json
 ├── frontend/
 │   ├── Dockerfile        # Frontend container image
-│   ├── app/              # Next.js App Router UI and API proxy routes
+│   ├── app/              # Next.js App Router UI, layout composition, and API proxy routes
+│   ├── components/ui/    # shadcn/ui components
+│   ├── lib/              # Shared frontend utilities
 │   ├── package.json      # Frontend scripts and dependencies
 │   └── tsconfig.json     # TypeScript configuration
 ├── tests/
@@ -77,12 +79,23 @@ For Docker Compose, `BACKEND_URL` is set to `http://backend:8000`. For local fro
 
 ## Frontend Features
 
-- Indonesian clinical UI with small English helper text.
-- Symptom checklist grouped by weight: high, medium, and low impact.
+- Professional Indonesian clinical UI with small English helper text.
+- Two-page flow: landing page at `/` and diagnosis workflow at `/diagnose`.
+- Reusable composition components for page shell, intro sections, content sections, and process steps.
+- shadcn/ui components for cards, buttons, badges, alerts, checkboxes, progress, skeletons, switches, and accordions.
+- Lenis smooth scrolling with reduced-motion handling.
+- Symptom checklist grouped by clinical category, not by weight.
 - RBR result panel for exact rule matches.
 - CBR similarity details with per-disease matched symptoms, unmatched symptoms, formula, and weighted score.
 - Expert mode retain workflow for saving validated cases to the case base.
 - Next.js API proxy routes to avoid browser-side Docker hostname issues.
+
+## Frontend Routes
+
+| Route       | Description                                      |
+|-------------|--------------------------------------------------|
+| `/`         | Landing page with short RBR + CBR explanation    |
+| `/diagnose` | Clinical symptom checklist and diagnosis results |
 
 ## Frontend Proxy Routes
 
