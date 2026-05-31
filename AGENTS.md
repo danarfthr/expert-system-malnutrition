@@ -131,6 +131,6 @@ uv run ruff check . && uv run ruff format .             # Lint and format
 
 ## Git Conventions
 
-- Branch: `feat/`, `fix/`, `chore/`
+- Always do micro-commit. Do not commit broken code.
 - Commit messages in English, imperative: `Add forward chaining rule evaluation`
-- Never commit `.env`, `__pycache__`, or `.venv`
+- Always respect .gitignore
