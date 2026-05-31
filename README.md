@@ -5,8 +5,8 @@ Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Hyb
 ## Tech Stack
 
 - **Backend:** Python 3.13+, FastAPI
-- **Frontend:** Streamlit
-- **Package Manager:** UV
+- **Frontend:** Next.js, React, TypeScript, Tailwind CSS
+- **Package Manager:** UV for Python backend, npm for Next.js frontend
 - **Deployment:** Docker & Docker Compose
 
 ## Project Structure
@@ -23,7 +23,9 @@ Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Hyb
 │   └── data/              # rules.json, case_base.json, symptom_weights.json
 ├── frontend/
 │   ├── Dockerfile        # Frontend container image
-│   └── app.py             # Streamlit UI
+│   ├── app/              # Next.js App Router UI and API proxy routes
+│   ├── package.json      # Frontend scripts and dependencies
+│   └── tsconfig.json     # TypeScript configuration
 ├── tests/
 │   ├── test_rbr.py
 │   ├── test_cbr.py
@@ -39,8 +41,19 @@ Sistem pakar diagnosa dini malnutrition (Gizi Buruk) pada balita menggunakan Hyb
 # Backend
 uv run uvicorn backend.main:app --reload --port 8000
 
-# Frontend (in another terminal)
-uv run streamlit run frontend/app.py
+# Frontend setup
+cd frontend
+npm install
+
+# Frontend development server (in another terminal)
+npm run dev
+
+# Frontend build and lint
+npm run build
+npm run lint
+
+# Return to project root before backend commands
+cd ..
 
 # Run tests
 uv run pytest tests/ -v
@@ -56,7 +69,28 @@ docker-compose up --build
 ```
 
 - Backend: http://localhost:8000
-- Frontend: http://localhost:8501
+- Frontend: http://localhost:3000
+
+The Next.js frontend calls relative `/api/*` routes. Those route handlers proxy requests to FastAPI through `BACKEND_URL`.
+
+For Docker Compose, `BACKEND_URL` is set to `http://backend:8000`. For local frontend development outside Docker, the default backend URL is `http://localhost:8000`.
+
+## Frontend Features
+
+- Indonesian clinical UI with small English helper text.
+- Symptom checklist grouped by weight: high, medium, and low impact.
+- RBR result panel for exact rule matches.
+- CBR similarity details with per-disease matched symptoms, unmatched symptoms, formula, and weighted score.
+- Expert mode retain workflow for saving validated cases to the case base.
+- Next.js API proxy routes to avoid browser-side Docker hostname issues.
+
+## Frontend Proxy Routes
+
+| Method | Route           | Proxies To              | Description                 |
+|--------|-----------------|-------------------------|-----------------------------|
+| GET    | `/api/symptoms` | `GET /symptoms`         | Fetch symptom definitions   |
+| POST   | `/api/diagnose` | `POST /diagnose`        | Run diagnosis               |
+| POST   | `/api/cases`    | `POST /cases`           | Retain expert-approved case |
 
 ## API Endpoints
 
