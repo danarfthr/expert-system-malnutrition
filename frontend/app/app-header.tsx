@@ -1,19 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, Home, Stethoscope } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
-export default function AppHeader({
-  actionHref,
-  actionLabel,
-}: {
-  actionHref: string;
-  actionLabel: string;
-}) {
-  const isHomeAction = actionHref === "/";
-  const ActionIcon = isHomeAction ? Home : ArrowRight;
-
+export default function AppHeader() {
   return (
     <>
       <a
@@ -23,32 +13,22 @@ export default function AppHeader({
         Lewati ke konten utama
       </a>
 
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/82 backdrop-blur-xl supports-[backdrop-filter]:bg-background/72">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/78">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3 rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-ring/35">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-cyan-900/15">
+            <span className="flex size-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-cyan-900/15 sm:size-11">
               <Stethoscope className="size-5" aria-hidden="true" />
             </span>
             <span>
-              <span className="block text-xs font-bold uppercase tracking-[0.24em] text-primary">
+              <span className="block text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary sm:text-xs">
                 Clinical Expert System
               </span>
-              <span className="mt-1 block text-base font-bold text-foreground sm:text-lg">Sistem Pakar Gizi Buruk</span>
+              <span className="mt-1 block text-sm font-bold text-foreground sm:text-lg">Sistem Pakar Gizi Buruk</span>
             </span>
           </Link>
 
-          <nav aria-label="Navigasi utama" className="flex flex-wrap items-center gap-2">
+          <nav aria-label="Informasi sistem" className="hidden sm:block">
             <Badge className="h-7 rounded-full bg-primary text-primary-foreground">Hybrid RBR + CBR</Badge>
-            <Button
-              asChild
-              variant={isHomeAction ? "outline" : "default"}
-              className="h-10 rounded-full px-4"
-            >
-              <Link href={actionHref}>
-                {actionLabel}
-                <ActionIcon className="size-4" aria-hidden="true" />
-              </Link>
-            </Button>
           </nav>
         </div>
       </header>

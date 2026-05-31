@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, startTransition, useEffect, useRef, useState } from "react";
+import { FormEvent, startTransition, useEffect, useRef, useState, type ElementType } from "react";
+import { useLenis } from "lenis/react";
 import {
   AlertCircle,
   Activity,
@@ -141,6 +142,7 @@ function getWeightLabel(weight: number): string {
 }
 
 export default function DiagnosisPanel() {
+  const lenis = useLenis();
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null);
@@ -195,11 +197,16 @@ export default function DiagnosisPanel() {
     }
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (lenis && !prefersReducedMotion && resultSectionRef.current) {
+      lenis.scrollTo(resultSectionRef.current, { offset: -104, duration: 1.05 });
+      return;
+    }
+
     resultSectionRef.current?.scrollIntoView({
-      behavior: prefersReducedMotion ? "auto" : "smooth",
+      behavior: "auto",
       block: "start",
     });
-  }, [diagnosis]);
+  }, [diagnosis, lenis]);
 
   function setSymptomSelected(code: string, checked: boolean) {
     setSelectedSymptoms((current) => {
@@ -309,7 +316,7 @@ export default function DiagnosisPanel() {
   return (
     <section id="diagnosis-panel" className="scroll-mt-28 space-y-6 pb-12">
       <form onSubmit={handleDiagnose}>
-        <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
+        <Card className="border-border/70 bg-card/94 shadow-xl shadow-cyan-950/6">
           <CardHeader className="gap-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -348,45 +355,27 @@ export default function DiagnosisPanel() {
               </Alert>
             ) : null}
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {clinicalCategories.map((category) => {
                 if (category.symptoms.length === 0) {
                   return null;
                 }
 
-                const Icon = category.icon;
-
                 return (
-                  <fieldset key={category.title} className="rounded-3xl border border-border/80 bg-background/55 p-4 sm:p-5">
-                    <legend className="px-2">
-                      <div className="flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                          <Icon className="size-5" aria-hidden="true" />
-                        </span>
-                        <span>
-                          <span className="block text-base font-black text-foreground">{category.title}</span>
-                          <span className="block max-w-2xl text-sm leading-6 text-muted-foreground">
-                            {category.helper}
-                          </span>
-                        </span>
-                      </div>
-                    </legend>
-                    <div className="mt-4 space-y-3">
-                      {category.symptoms.map((symptom) => (
-                        <SymptomOption
-                          key={symptom.code}
-                          symptom={symptom}
-                          checked={selectedSet.has(symptom.code)}
-                          onCheckedChange={(checked) => setSymptomSelected(symptom.code, checked)}
-                        />
-                      ))}
-                    </div>
-                  </fieldset>
+                  <ClinicalSymptomGroup
+                    key={category.title}
+                    title={category.title}
+                    helper={category.helper}
+                    icon={category.icon}
+                    symptoms={category.symptoms}
+                    selectedSet={selectedSet}
+                    onSelect={setSymptomSelected}
+                  />
                 );
               })}
 
               {uncategorizedSymptoms.length > 0 ? (
-                <fieldset className="rounded-3xl border border-border/80 bg-background/55 p-4 sm:p-5">
+                <fieldset className="rounded-3xl border border-border/70 bg-background/45 p-4 sm:p-5">
                   <legend className="px-2 text-base font-black text-foreground">Gejala Lainnya</legend>
                   <div className="mt-4 space-y-3">
                     {uncategorizedSymptoms.map((symptom) => (
@@ -404,7 +393,7 @@ export default function DiagnosisPanel() {
 
             <Separator className="my-6" />
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-3xl bg-background/45 p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
                 {selectedSymptoms.length} gejala dipilih
               </p>
@@ -431,7 +420,7 @@ export default function DiagnosisPanel() {
       </form>
 
       <section ref={resultSectionRef} id="diagnosis-result" className="scroll-mt-28">
-        <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
+        <Card className="border-border/70 bg-card/94 shadow-xl shadow-cyan-950/6">
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -479,6 +468,48 @@ export default function DiagnosisPanel() {
   );
 }
 
+function ClinicalSymptomGroup({
+  title,
+  helper,
+  icon: Icon,
+  symptoms,
+  selectedSet,
+  onSelect,
+}: {
+  title: string;
+  helper: string;
+  icon: ElementType;
+  symptoms: Symptom[];
+  selectedSet: Set<string>;
+  onSelect: (code: string, checked: boolean) => void;
+}) {
+  return (
+    <fieldset className="rounded-3xl border border-border/70 bg-background/45 p-4 transition-colors sm:p-5">
+      <legend className="px-2">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Icon className="size-5" aria-hidden="true" />
+          </span>
+          <span>
+            <span className="block text-base font-black text-foreground">{title}</span>
+            <span className="block max-w-2xl text-sm leading-6 text-muted-foreground">{helper}</span>
+          </span>
+        </div>
+      </legend>
+      <div className="mt-4 grid gap-3">
+        {symptoms.map((symptom) => (
+          <SymptomOption
+            key={symptom.code}
+            symptom={symptom}
+            checked={selectedSet.has(symptom.code)}
+            onCheckedChange={(checked) => onSelect(symptom.code, checked)}
+          />
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 function SymptomOption({
   symptom,
   checked,
@@ -494,8 +525,8 @@ function SymptomOption({
     <label
       htmlFor={inputId}
       className={cn(
-        "group flex min-h-28 cursor-pointer gap-3 rounded-2xl border bg-card p-4 transition-all hover:border-primary/60 hover:bg-secondary/55",
-        checked ? "border-primary bg-secondary shadow-sm shadow-cyan-900/8" : "border-border/80",
+        "group flex min-h-24 cursor-pointer gap-3 rounded-2xl border bg-card p-4 transition-all duration-200 hover:border-primary/50 hover:bg-secondary/45",
+        checked ? "border-primary bg-secondary/90 shadow-sm shadow-cyan-900/8" : "border-border/70",
       )}
     >
       <Checkbox
@@ -515,7 +546,7 @@ function SymptomOption({
             {getWeightLabel(symptom.weight)}
           </Badge>
         </span>
-        <span className="mt-3 block break-words text-sm font-bold leading-6 text-foreground sm:text-base">
+        <span className="mt-3 block break-words text-sm font-bold leading-6 text-foreground sm:text-[0.98rem]">
           {symptom.name}
         </span>
         <span className="mt-1 block break-words text-sm leading-6 text-muted-foreground">
@@ -550,7 +581,7 @@ function SymptomSkeleton() {
 
 function SelectedSymptomsCard({ selectedDetails }: { selectedDetails: Symptom[] }) {
   return (
-    <div className="rounded-3xl border border-border/80 bg-background/55 p-4">
+    <div className="rounded-3xl border border-border/70 bg-background/45 p-4">
       <div className="flex items-center gap-2">
         <ClipboardList className="size-4 text-primary" aria-hidden="true" />
         <h3 className="font-black text-foreground">Gejala Terpilih</h3>
@@ -576,7 +607,7 @@ function SelectedSymptomsCard({ selectedDetails }: { selectedDetails: Symptom[] 
 function DiagnosisResultCard({ diagnosis }: { diagnosis: DiagnosisResult | null }) {
   if (!diagnosis) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-background/55 p-5 text-sm leading-6 text-muted-foreground">
+      <div className="rounded-3xl border border-dashed border-border bg-background/45 p-5 text-sm leading-6 text-muted-foreground">
         <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
           <Sparkles className="size-5" aria-hidden="true" />
         </div>
@@ -613,7 +644,7 @@ function DiagnosisResultCard({ diagnosis }: { diagnosis: DiagnosisResult | null 
           {diagnosis.disease_code}
         </p>
       ) : null}
-      <div className="mt-5 grid gap-3">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Metric
           icon={Layers3}
           label="Metode"
@@ -644,7 +675,7 @@ function Metric({
   helper: string;
 }) {
   return (
-    <div className="rounded-2xl bg-card/70 p-4 shadow-sm shadow-cyan-900/5">
+    <div className="rounded-2xl bg-card/75 p-4 shadow-sm shadow-cyan-900/5">
       <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] opacity-75">
         <Icon className="size-3.5" aria-hidden="true" />
         {label}
@@ -667,7 +698,7 @@ function ExpertRetainPanel({
   onSave: () => void;
 }) {
   return (
-    <div className="rounded-3xl border border-amber-300/60 bg-amber-50 p-4 text-amber-950">
+    <div className="rounded-3xl border border-amber-300/60 bg-amber-50 p-5 text-amber-950">
       <div className="flex items-center gap-2">
         <BadgeCheck className="size-4" aria-hidden="true" />
         <h3 className="font-black">Panel Retain Pakar</h3>
@@ -737,7 +768,7 @@ function CbrDetails({ details }: { details: PerDiseaseDetail[] }) {
   const defaultValue = details.find((disease) => disease.is_winner)?.code;
 
   return (
-    <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
+    <Card className="border-border/70 bg-card/94 shadow-xl shadow-cyan-950/6">
       <CardHeader>
         <CardTitle className="text-xl font-black">Detail Similarity CBR</CardTitle>
         <CardDescription className="leading-6">

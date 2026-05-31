@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { Activity, ArrowRight, ClipboardCheck, GitBranch, ShieldCheck } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-import AppHeader from "./app-header";
+import { ContentSection, PageIntro, PageShell, ProcessStep } from "./page-shell";
 
 const METHOD_CARDS = [
   {
@@ -34,82 +32,44 @@ const METHOD_CARDS = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen overflow-x-hidden text-foreground">
-      <AppHeader actionHref="/diagnose" actionLabel="Mulai Diagnosa" />
-
-      <main id="main-content" className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="py-10 sm:py-16">
-          <Badge variant="secondary" className="mb-5 h-8 rounded-full px-4 text-sm text-secondary-foreground">
-            Diagnosa dini untuk balita
-          </Badge>
-          <h1 className="max-w-4xl text-balance text-4xl font-black leading-[1.05] text-foreground sm:text-5xl lg:text-6xl">
-            Sistem pakar yang menjelaskan proses diagnosis gizi buruk secara singkat dan transparan.
-          </h1>
-          <p className="mt-5 max-w-3xl text-pretty text-lg leading-8 text-muted-foreground">
-            Aplikasi ini membantu memilih gejala klinis, menjalankan aturan pakar terlebih dahulu, lalu memakai
-            pembandingan kasus jika aturan tidak terpenuhi penuh.
-          </p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              asChild
-              size="lg"
-              className="h-12 rounded-full bg-primary px-6 text-base shadow-lg shadow-cyan-900/15 hover:bg-cyan-800"
-            >
-              <Link href="/diagnose">
-                Mulai Diagnosa
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
-            </Button>
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <ShieldCheck className="size-4 text-accent" aria-hidden="true" />
-              Hasil adalah dukungan keputusan, bukan pengganti pemeriksaan klinis.
-            </div>
+    <PageShell>
+      <PageIntro
+        eyebrow="Diagnosa dini untuk balita"
+        title="Sistem pakar gizi buruk yang ringkas, klinis, dan transparan."
+        description="Pilih gejala klinis yang terlihat, lalu sistem menjalankan aturan pakar terlebih dahulu dan memakai pembandingan kasus hanya saat aturan tidak cocok penuh."
+        className="py-12 sm:py-20 lg:py-24"
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Button
+            asChild
+            size="lg"
+            className="h-12 rounded-full bg-primary px-7 text-base shadow-lg shadow-cyan-900/15 hover:bg-cyan-800"
+          >
+            <Link href="/diagnose">
+              Mulai Diagnosa
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </Button>
+          <div className="flex max-w-xl items-center justify-center gap-2 text-center text-sm font-medium leading-6 text-muted-foreground">
+            <ShieldCheck className="size-4 shrink-0 text-accent" aria-hidden="true" />
+            Hasil adalah dukungan keputusan, bukan pengganti pemeriksaan klinis.
           </div>
-        </section>
+        </div>
+      </PageIntro>
 
-        <Separator />
+      <Separator className="mx-auto max-w-3xl" />
 
-        <section className="space-y-4 py-10 sm:py-12" aria-labelledby="workflow-title">
-          <div>
-            <Badge variant="outline" className="mb-3 rounded-full bg-card/80">
-              Alur singkat
-            </Badge>
-            <h2 id="workflow-title" className="text-2xl font-black sm:text-3xl">
-              Cara sistem mengambil keputusan
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            {METHOD_CARDS.map((card, index) => {
-              const Icon = card.icon;
-
-              return (
-                <Card key={card.label} className="border-border/80 bg-card/88 shadow-sm shadow-cyan-900/5">
-                  <CardHeader>
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex gap-3">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
-                          <Icon className="size-5" aria-hidden="true" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg font-bold">{card.title}</CardTitle>
-                          <CardDescription className="mt-2 leading-6">{card.description}</CardDescription>
-                        </div>
-                      </div>
-                      <Badge variant={index === 0 ? "default" : "outline"} className="w-fit rounded-full" translate="no">
-                        {card.label}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm font-medium text-muted-foreground">{card.helper}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      </main>
-    </div>
+      <ContentSection
+        eyebrow="Alur singkat"
+        title="Cara sistem mengambil keputusan"
+        description="Urutannya sengaja sederhana: aturan pakar menjadi filter utama, kemudian CBR dipakai sebagai fallback yang tetap dapat ditelusuri."
+      >
+        <div className="mx-auto grid max-w-4xl gap-4">
+          {METHOD_CARDS.map((card, index) => (
+            <ProcessStep key={card.label} {...card} highlighted={index === 0} />
+          ))}
+        </div>
+      </ContentSection>
+    </PageShell>
   );
 }
