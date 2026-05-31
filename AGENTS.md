@@ -1,9 +1,11 @@
-# Expert System: Child Nutritional Status Diagnosis (CBR)
+# Expert System: Child Nutritional Status Diagnosis (RBR + CBR Hybrid)
 
 ## Project Overview
 
-An expert system for early diagnosis of malnutrition (Gizi Buruk) in toddlers using
-Case-Based Reasoning (CBR) with Nearest Neighbor Retrieval and Similarity Threshold for uncertainty handling.
+An expert system for early diagnosis of malnutrition (Gizi Buruk) in toddlers using a
+hybrid approach: Rule-Based Reasoning (RBR) with Forward Chaining as the primary filter,
+falling back to Case-Based Reasoning (CBR) with Nearest Neighbor Retrieval when rules
+do not match perfectly.
 
 ## Tech Stack
 
@@ -11,62 +13,95 @@ Case-Based Reasoning (CBR) with Nearest Neighbor Retrieval and Similarity Thresh
 - **Frontend:** Streamlit
 - **Package Manager:** UV (always use UV — never pip or conda directly)
 - **Deployment:** Docker & Docker Compose
-- **Data:** JSON/CSV for case base and symptom weights
+- **Data:** JSON/CSV for rule base, case base, and symptom weights
 
-## Core Algorithm: CBR (4R Cycle)
+## Core Algorithm: Hybrid RBR → CBR
 
-1. **Retrieve** — Nearest Neighbor Retrieval (NNR):
-   `Similarity = sum(S_i * W_i) / sum(W_i)`
-   - `S_i`: 1 if symptom matches, 0 otherwise
-   - `W_i`: symptom weight (1=Low, 3=Medium, 5=High)
-2. **Reuse** — Return diagnosis of the highest-similarity case
-3. **Revise** — Expert adjusts diagnosis if similarity is below threshold (via UI)
-4. **Retain** — Persist validated case back to knowledge base
+### Decision Flow
 
-## Uncertainty Handling: Similarity Threshold
+```
+User Input (Symptoms)
+        │
+        ▼
+┌─────────────────────┐
+│  Step 1: RBR        │  Forward Chaining over predefined rules
+│  (Forward Chaining) │
+└────────┬────────────┘
+         │
+    100% match?
+    ┌────┴────┐
+   YES        NO
+    │          │
+    ▼          ▼
+RBR Output   Step 2: CBR (NNR)
+(Instant)    → Compute similarity for all cases
+             → Return highest-similarity diagnosis
+             → If similarity < threshold → trigger Revise (expert review)
+```
 
-CBR handles uncertainty inherently through the NNR similarity percentage — no Certainty Factor needed.
+### Step 1: RBR — Forward Chaining
 
-- `similarity == 1.0` — Absolute certainty: new case is identical to an existing case
-- `similarity >= threshold` — System concludes the situation is "similar enough" and recommends the diagnosis with the highest similarity score
-- `similarity < threshold` — System flags low confidence; the Revise step is triggered for expert review
+- Rules are defined as IF-THEN structures covering three diagnosis categories (Rule 1, 2, 3)
+- If **all** symptoms in a rule fire → diagnosis is returned immediately; CBR is skipped
+- Rule evaluation is O(n_rules) and must complete before any CBR computation
 
-Do not implement a separate CF module. The similarity score is the confidence metric.
+### Step 2: CBR — Nearest Neighbor Retrieval (NNR)
+
+Triggered only when no rule matches 100%.
+
+`Similarity = sum(S_i * W_i) / sum(W_i)`
+
+- `S_i`: 1 if symptom matches, 0 otherwise
+- `W_i`: symptom weight — High=5, Medium=3, Low=1
+
+### Uncertainty Handling: Similarity Threshold
+
+CBR inherently expresses confidence through its similarity percentage — no Certainty Factor needed.
+
+- `similarity == 1.0` — Identical case found; diagnosis returned automatically
+- `similarity >= threshold` — Sufficient confidence; diagnosis recommended
+- `similarity < threshold` — Low confidence; Revise step triggered for expert review
 
 ## Project Structure
 
 ```
 .
 ├── backend/
-│   ├── Dockerfile        # Backend container image
 │   ├── main.py            # FastAPI entry point
-│   ├── cbr_engine.py      # Core CBR/NNR logic (decoupled from routing)
+│   ├── rbr_engine.py      # Forward Chaining rule evaluation (decoupled)
+│   ├── cbr_engine.py      # NNR similarity logic (decoupled)
+│   ├── hybrid_engine.py   # Orchestrates RBR → CBR decision flow
 │   ├── models/            # Pydantic schemas
-│   └── data/              # case_base.json, symptom_weights.json
+│   └── data/
+│       ├── rules.json           # IF-THEN rule definitions
+│       ├── case_base.json       # Historical case records
+│       └── symptom_weights.json # Weight definitions (5, 3, 1)
 ├── frontend/
-│   ├── Dockerfile        # Frontend container image
 │   └── app.py             # Streamlit UI
 ├── tests/
+│   ├── test_rbr.py
 │   └── test_cbr.py
-├── pyproject.toml         # Project metadata and dependencies (UV-managed)
+├── pyproject.toml         # UV-managed dependencies
 ├── docker-compose.yml
-├── AGENTS.md              # Main project instructions
-└── README.md              # Project overview and how to run the code
-
+└── CLAUDE.md
 ```
+
+## Engine Responsibilities
+
+- `rbr_engine.py` — Evaluates rules via forward chaining; returns diagnosis or `None`
+- `cbr_engine.py` — Computes NNR similarity; returns ranked cases
+- `hybrid_engine.py` — Calls RBR first; calls CBR only if RBR returns `None`
+- None of these files may import from FastAPI — keep logic fully decoupled from routing
 
 ## Package Management (UV)
 
 Always use UV. Never use `pip install` or `conda`.
 
 ```bash
-uv init                        # Initialize project (creates pyproject.toml)
-uv add fastapi uvicorn          # Add runtime dependencies
-uv add --dev pytest ruff        # Add dev dependencies
-uv run uvicorn backend.main:app --reload --port 8000
-uv run streamlit run frontend/app.py
-uv run pytest tests/
-uv sync                        # Sync environment from lockfile
+uv init                          # Initialize project
+uv add fastapi uvicorn           # Runtime dependencies
+uv add --dev pytest ruff         # Dev dependencies
+uv sync                          # Sync environment from lockfile
 ```
 
 ## Development Commands
@@ -74,41 +109,28 @@ uv sync                        # Sync environment from lockfile
 ```bash
 uv run uvicorn backend.main:app --reload --port 8000   # Backend dev
 uv run streamlit run frontend/app.py                    # Frontend dev
-docker-compose up --build                               # Full stack via Docker
+docker-compose up --build                               # Full stack
 uv run pytest tests/ -v                                 # Run tests
 uv run ruff check . && uv run ruff format .             # Lint and format
 ```
 
 ## Coding Conventions
 
-- **Type hints:** Enforce strict typing everywhere (`-> int`, `list[str]`, Pydantic models)
-- **Linting/Formatting:** Use Ruff for both linting and formatting (replaces Flake8 + Black)
-- **Modularity:** `cbr_engine.py` must have zero FastAPI imports
-- **Language:** Code, comments, and docstrings in English; UI labels and API messages in Indonesian
-- **Performance:** Use list comprehensions or NumPy for NNR over large case bases
-- **Error handling:** Return proper HTTP status codes — 400 for bad input, 404 for no matching case, 200 for success
-- **No globals:** Pass dependencies explicitly (use FastAPI `Depends()`)
-- **Secrets:** Never hardcode config — use `.env` loaded via `python-dotenv`
+- **Type hints:** Strict typing everywhere (`-> str | None`, `list[str]`, Pydantic models)
+- **Linting/Formatting:** Ruff only (replaces Flake8 + Black)
+- **Language:** Code, comments, docstrings in English; UI labels and API messages in Indonesian
+- **Error handling:** 400 for bad input, 404 for no matching case, 200 for success
+- **No globals:** Use FastAPI `Depends()` for dependency injection
+- **Secrets:** Never hardcode config — use `.env` via `python-dotenv`
 
 ## Testing
 
-- Minimum: one test per CBR function (similarity calc, retrieve, retain)
-- Use `pytest` with `uv run pytest`
-- Name tests descriptively: `test_similarity_returns_zero_for_no_match`
+- Test RBR and CBR engines independently
+- Test `hybrid_engine.py` for correct fallback behavior (RBR miss → CBR triggers)
+- Name tests descriptively: `test_rbr_returns_none_when_no_rule_fully_matches`
 
-## Git Commits
+## Git Conventions
 
-Format: `<type>(<scope>): <imperative verb> <what>` — max 72 chars, no period.
-Types: `feat` `fix` `refactor` `test` `chore` `docs`
-Scopes: `cbr` `api` `ui` `data` `config` `deps`
-
-One logical change per commit. Split end-to-end features by layer:
-
-```
-feat(cbr): Add NNR similarity calculation
-feat(api): Add POST /diagnose endpoint
-test(cbr): Add test for zero-match returning 0.0
-```
-
-Use `git add -p` to stage hunks — never `git add .` blindly.
-Never commit `.env`, `.venv/`, or `__pycache__/`.
+- Branch: `feat/`, `fix/`, `chore/`
+- Commit messages in English, imperative: `Add forward chaining rule evaluation`
+- Never commit `.env`, `__pycache__`, or `.venv`
