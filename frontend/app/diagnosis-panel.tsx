@@ -1,6 +1,42 @@
 "use client";
 
 import { FormEvent, startTransition, useEffect, useState } from "react";
+import {
+  AlertCircle,
+  Activity,
+  BadgeCheck,
+  CheckCircle2,
+  ClipboardList,
+  Droplets,
+  Eye,
+  Gauge,
+  Layers3,
+  Leaf,
+  Loader2,
+  RotateCcw,
+  Save,
+  ScanSearch,
+  ShieldAlert,
+  Sparkles,
+  Stethoscope,
+} from "lucide-react";
+
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 type Symptom = {
   code: string;
@@ -46,26 +82,40 @@ const percentFormatter = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 1,
 });
 
-const GROUPS = [
+const SYMPTOM_CATEGORIES = [
   {
-    title: "Bobot Tinggi",
-    helper: "High-impact symptoms",
-    weight: 5,
-    tone: "border-teal-300/30 bg-teal-300/10 text-teal-100",
+    title: "Cairan & Pembengkakan",
+    helper: "Tanda edema, perut membesar, atau retensi cairan.",
+    codes: ["G01", "G03", "G12"],
+    icon: Droplets,
   },
   {
-    title: "Bobot Sedang",
-    helper: "Moderate-impact symptoms",
-    weight: 3,
-    tone: "border-sky-300/30 bg-sky-300/10 text-sky-100",
+    title: "Pertumbuhan & Komposisi Tubuh",
+    helper: "Perubahan berat, tinggi, otot, tulang, dan kekenduran kulit.",
+    codes: ["G04", "G06", "G07", "G13", "G14"],
+    icon: Activity,
   },
   {
-    title: "Bobot Rendah",
-    helper: "Supporting symptoms",
-    weight: 1,
-    tone: "border-slate-300/20 bg-white/5 text-slate-200",
+    title: "Kulit & Rambut",
+    helper: "Perubahan pada kulit dan rambut yang mudah diamati.",
+    codes: ["G08", "G09", "G10"],
+    icon: Leaf,
+  },
+  {
+    title: "Mental, Energi & Tampilan Wajah",
+    helper: "Perubahan perilaku, kelelahan, mata, dan wajah.",
+    codes: ["G05", "G11", "G15", "G16", "G17"],
+    icon: Eye,
+  },
+  {
+    title: "Pencernaan",
+    helper: "Gejala saluran cerna yang mendukung diagnosis.",
+    codes: ["G02"],
+    icon: Stethoscope,
   },
 ];
+
+const CATEGORIZED_CODES = new Set(SYMPTOM_CATEGORIES.flatMap((category) => category.codes));
 
 function describeError(value: unknown): string {
   if (typeof value === "object" && value !== null && "detail" in value) {
@@ -76,6 +126,18 @@ function describeError(value: unknown): string {
   }
 
   return "Permintaan gagal diproses. Periksa koneksi backend lalu coba lagi.";
+}
+
+function getWeightLabel(weight: number): string {
+  if (weight >= 5) {
+    return "CBR tinggi";
+  }
+
+  if (weight >= 3) {
+    return "CBR sedang";
+  }
+
+  return "CBR pendukung";
 }
 
 export default function DiagnosisPanel() {
@@ -126,12 +188,14 @@ export default function DiagnosisPanel() {
     };
   }, []);
 
-  function toggleSymptom(code: string) {
-    setSelectedSymptoms((current) =>
-      current.includes(code)
-        ? current.filter((selectedCode) => selectedCode !== code)
-        : [...current, code],
-    );
+  function setSymptomSelected(code: string, checked: boolean) {
+    setSelectedSymptoms((current) => {
+      if (checked) {
+        return current.includes(code) ? current : [...current, code];
+      }
+
+      return current.filter((selectedCode) => selectedCode !== code);
+    });
     setSaveMessage(null);
   }
 
@@ -219,198 +283,181 @@ export default function DiagnosisPanel() {
   }
 
   const selectedSet = new Set(selectedSymptoms);
+  const symptomByCode = new Map(symptoms.map((symptom) => [symptom.code, symptom]));
   const selectedDetails = symptoms.filter((symptom) => selectedSet.has(symptom.code));
+  const clinicalCategories = SYMPTOM_CATEGORIES.map((category) => ({
+    ...category,
+    symptoms: category.codes
+      .map((code) => symptomByCode.get(code))
+      .filter((symptom): symptom is Symptom => Boolean(symptom)),
+  }));
+  const uncategorizedSymptoms = symptoms.filter((symptom) => !CATEGORIZED_CODES.has(symptom.code));
 
   return (
-    <section className="grid gap-6 pb-12 lg:grid-cols-[1.15fr_0.85fr]">
-      <form
-        className="rounded-[2rem] border border-white/10 bg-white/[0.07] p-5 shadow-2xl shadow-slate-950/30 sm:p-6"
-        onSubmit={handleDiagnose}
-      >
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-white">Pilih Gejala</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Centang semua gejala yang terlihat. Bobot tinggi memberi pengaruh lebih besar pada similarity CBR.
-            </p>
-            <p className="mt-1 text-xs text-slate-500">Choose observed symptoms before running diagnosis.</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={resetDiagnosis}
-              disabled={isDiagnosing || selectedSymptoms.length === 0}
-            >
-              Reset Pilihan
-            </button>
-          </div>
-        </div>
+    <section id="diagnosis-panel" className="grid scroll-mt-24 gap-6 pb-12 lg:grid-cols-[1.14fr_0.86fr]">
+      <form onSubmit={handleDiagnose}>
+        <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
+          <CardHeader className="gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <Badge variant="outline" className="mb-3 rounded-full bg-secondary/80 text-secondary-foreground">
+                  Checklist gejala klinis
+                </Badge>
+                <CardTitle className="text-2xl font-black sm:text-3xl">Pilih Gejala</CardTitle>
+                <CardDescription className="mt-2 max-w-2xl text-base leading-7">
+                  Daftar gejala dikelompokkan berdasarkan kategori klinis agar lebih mudah diperiksa.
+                  Bobot tetap ditampilkan sebagai konteks perhitungan CBR, bukan dasar pengelompokan.
+                </CardDescription>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-full bg-card px-4"
+                onClick={resetDiagnosis}
+                disabled={isDiagnosing || selectedSymptoms.length === 0}
+              >
+                <RotateCcw className="size-4" aria-hidden="true" />
+                Reset Pilihan
+              </Button>
+            </div>
+          </CardHeader>
 
-        {isLoadingSymptoms ? (
-          <div className="mt-6 rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-slate-300" aria-live="polite">
-            Memuat daftar gejala…
-          </div>
-        ) : null}
+          <CardContent>
+            {isLoadingSymptoms ? <SymptomSkeleton /> : null}
 
-        {!isLoadingSymptoms && symptoms.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-amber-300/30 bg-amber-300/10 p-6 text-amber-100" aria-live="polite">
-            Gejala belum tersedia. Pastikan backend berjalan dan endpoint <span translate="no">/symptoms</span> dapat diakses.
-          </div>
-        ) : null}
+            {!isLoadingSymptoms && symptoms.length === 0 ? (
+              <Alert className="border-amber-300/50 bg-amber-50 text-amber-950" role="status">
+                <AlertCircle className="size-4" aria-hidden="true" />
+                <AlertTitle>Gejala belum tersedia</AlertTitle>
+                <AlertDescription className="text-amber-900">
+                  Pastikan backend berjalan dan endpoint <span translate="no">/symptoms</span> dapat diakses.
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
-        <div className="mt-6 space-y-6">
-          {GROUPS.map((group) => {
-            const groupedSymptoms = symptoms.filter((symptom) => symptom.weight === group.weight);
+            <div className="space-y-5">
+              {clinicalCategories.map((category) => {
+                if (category.symptoms.length === 0) {
+                  return null;
+                }
 
-            if (groupedSymptoms.length === 0) {
-              return null;
-            }
+                const Icon = category.icon;
 
-            return (
-              <fieldset key={group.weight} className="space-y-3">
-                <legend className="flex flex-wrap items-center gap-3 text-lg font-bold text-white">
-                  {group.title}
-                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${group.tone}`}>
-                    Bobot {group.weight}
-                  </span>
-                  <span className="text-xs font-normal text-slate-500">{group.helper}</span>
-                </legend>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {groupedSymptoms.map((symptom) => {
-                    const inputId = `symptom-${symptom.code}`;
-                    const checked = selectedSet.has(symptom.code);
-
-                    return (
-                      <label
-                        key={symptom.code}
-                        htmlFor={inputId}
-                        className={`group flex min-w-0 cursor-pointer gap-3 rounded-3xl border p-4 transition-colors hover:border-teal-300/60 hover:bg-teal-300/10 ${
-                          checked
-                            ? "border-teal-300/70 bg-teal-300/15"
-                            : "border-white/10 bg-slate-950/40"
-                        }`}
-                      >
-                        <input
-                          id={inputId}
-                          name="symptoms"
-                          type="checkbox"
-                          value={symptom.code}
-                          checked={checked}
-                          onChange={() => toggleSymptom(symptom.code)}
-                          className="mt-1 h-5 w-5 rounded border-white/30 bg-slate-950 text-teal-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300"
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-2">
-                            <span className="rounded-full bg-white/10 px-2 py-1 text-xs font-black text-teal-100" translate="no">
-                              {symptom.code}
-                            </span>
-                            <span className="break-words font-semibold text-white">{symptom.name}</span>
-                          </span>
-                          <span className="mt-2 block break-words text-sm leading-6 text-slate-400">
-                            {symptom.name_en}
+                return (
+                  <fieldset key={category.title} className="rounded-3xl border border-border/80 bg-background/55 p-4 sm:p-5">
+                    <legend className="px-2">
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                          <Icon className="size-5" aria-hidden="true" />
+                        </span>
+                        <span>
+                          <span className="block text-base font-black text-foreground">{category.title}</span>
+                          <span className="block max-w-2xl text-sm leading-6 text-muted-foreground">
+                            {category.helper}
                           </span>
                         </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            );
-          })}
-        </div>
+                      </div>
+                    </legend>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {category.symptoms.map((symptom) => (
+                        <SymptomOption
+                          key={symptom.code}
+                          symptom={symptom}
+                          checked={selectedSet.has(symptom.code)}
+                          onCheckedChange={(checked) => setSymptomSelected(symptom.code, checked)}
+                        />
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              })}
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-400" aria-live="polite">
-            {selectedSymptoms.length} gejala dipilih
-          </p>
-          <button
-            type="submit"
-            className="rounded-full bg-teal-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-teal-950/30 transition-colors hover:bg-teal-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-            disabled={isDiagnosing || isLoadingSymptoms || selectedSymptoms.length === 0}
-          >
-            {isDiagnosing ? "Mendiagnosa…" : "Jalankan Diagnosa"}
-          </button>
-        </div>
+              {uncategorizedSymptoms.length > 0 ? (
+                <fieldset className="rounded-3xl border border-border/80 bg-background/55 p-4 sm:p-5">
+                  <legend className="px-2 text-base font-black text-foreground">Gejala Lainnya</legend>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {uncategorizedSymptoms.map((symptom) => (
+                      <SymptomOption
+                        key={symptom.code}
+                        symptom={symptom}
+                        checked={selectedSet.has(symptom.code)}
+                        onCheckedChange={(checked) => setSymptomSelected(symptom.code, checked)}
+                      />
+                    ))}
+                  </div>
+                </fieldset>
+              ) : null}
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
+                {selectedSymptoms.length} gejala dipilih
+              </p>
+              <Button
+                type="submit"
+                className="h-12 rounded-full bg-primary px-6 text-base font-black shadow-lg shadow-cyan-900/15 hover:bg-cyan-800"
+                disabled={isDiagnosing || isLoadingSymptoms || selectedSymptoms.length === 0}
+              >
+                {isDiagnosing ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Mendiagnosa...
+                  </>
+                ) : (
+                  <>
+                    <ScanSearch className="size-4" aria-hidden="true" />
+                    Jalankan Diagnosa
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </form>
 
       <aside className="space-y-6">
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.07] p-5 shadow-2xl shadow-slate-950/30 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-black text-white">Ringkasan</h2>
-              <p className="mt-1 text-sm text-slate-400">Diagnosis output and explainability.</p>
-            </div>
-            <label className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
-              <input
-                name="expert-mode"
-                type="checkbox"
-                checked={expertMode}
-                onChange={(event) => setExpertMode(event.target.checked)}
-                className="h-4 w-4 rounded border-white/30 bg-slate-950 text-teal-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300"
-              />
-              Mode Pakar
-            </label>
-          </div>
-
-          <div className="mt-5 rounded-3xl border border-white/10 bg-slate-950/45 p-4">
-            <h3 className="font-bold text-white">Gejala Terpilih</h3>
-            {selectedDetails.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {selectedDetails.map((symptom) => (
-                  <span
-                    key={symptom.code}
-                    className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm text-slate-200"
-                  >
-                    <span className="font-black text-teal-200" translate="no">{symptom.code}</span> {symptom.name}
-                  </span>
-                ))}
+        <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-2xl font-black">Ringkasan</CardTitle>
+                <CardDescription className="mt-1 leading-6">
+                  Hasil diagnosis, gejala terpilih, dan mode retain pakar.
+                </CardDescription>
               </div>
-            ) : (
-              <p className="mt-3 text-sm text-slate-500">Belum ada gejala dipilih.</p>
-            )}
-          </div>
-
-          {error ? (
-            <div className="mt-5 rounded-3xl border border-red-300/30 bg-red-300/10 p-4 text-sm leading-6 text-red-100" aria-live="polite">
-              {error}
+              <div className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-background px-3 py-2">
+                <Switch id="expert-mode" checked={expertMode} onCheckedChange={setExpertMode} aria-label="Aktifkan mode pakar" />
+                <label htmlFor="expert-mode" className="text-sm font-semibold text-foreground">
+                  Mode Pakar
+                </label>
+              </div>
             </div>
-          ) : null}
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <SelectedSymptomsCard selectedDetails={selectedDetails} />
 
-          <DiagnosisResultCard diagnosis={diagnosis} />
+            {error ? (
+              <Alert variant="destructive" className="border-destructive/30 bg-red-50">
+                <AlertCircle className="size-4" aria-hidden="true" />
+                <AlertTitle>Terjadi kendala</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-          {expertMode && diagnosis?.disease_code ? (
-            <div className="mt-5 rounded-3xl border border-amber-300/30 bg-amber-300/10 p-4">
-              <h3 className="font-bold text-amber-50">Panel Retain Pakar</h3>
-              <p className="mt-2 text-sm leading-6 text-amber-100/90">
-                Simpan kombinasi gejala ini ke basis kasus jika pakar menyetujui hasil diagnosa.
-              </p>
-              <dl className="mt-4 grid gap-3 text-sm">
-                <div>
-                  <dt className="text-amber-100/70">Kode Penyakit</dt>
-                  <dd className="font-bold text-amber-50" translate="no">{diagnosis.disease_code}</dd>
-                </div>
-                <div>
-                  <dt className="text-amber-100/70">Nama Penyakit</dt>
-                  <dd className="font-bold text-amber-50">{diagnosis.disease_name}</dd>
-                </div>
-              </dl>
-              <button
-                type="button"
-                className="mt-4 w-full rounded-full bg-amber-200 px-5 py-3 text-sm font-black text-slate-950 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-200 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-                onClick={handleSaveCase}
-                disabled={isSavingCase}
-              >
-                {isSavingCase ? "Menyimpan…" : "Simpan ke Basis Kasus"}
-              </button>
-              {saveMessage ? (
-                <p className="mt-3 text-sm leading-6 text-amber-50" aria-live="polite">
-                  {saveMessage}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
+            <DiagnosisResultCard diagnosis={diagnosis} />
+
+            {expertMode && diagnosis?.disease_code ? (
+              <ExpertRetainPanel
+                diagnosis={diagnosis}
+                isSavingCase={isSavingCase}
+                saveMessage={saveMessage}
+                onSave={handleSaveCase}
+              />
+            ) : null}
+          </CardContent>
+        </Card>
 
         {diagnosis?.matched_rule ? <MatchedRuleDetail rule={diagnosis.matched_rule} /> : null}
         {diagnosis?.per_disease?.length ? <CbrDetails details={diagnosis.per_disease} /> : null}
@@ -419,10 +466,107 @@ export default function DiagnosisPanel() {
   );
 }
 
+function SymptomOption({
+  symptom,
+  checked,
+  onCheckedChange,
+}: {
+  symptom: Symptom;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  const inputId = `symptom-${symptom.code}`;
+
+  return (
+    <label
+      htmlFor={inputId}
+      className={cn(
+        "group flex min-h-28 cursor-pointer gap-3 rounded-2xl border bg-card p-4 transition-all hover:border-primary/60 hover:bg-secondary/55",
+        checked ? "border-primary bg-secondary shadow-sm shadow-cyan-900/8" : "border-border/80",
+      )}
+    >
+      <Checkbox
+        id={inputId}
+        name="symptoms"
+        value={symptom.code}
+        checked={checked}
+        onCheckedChange={(value) => onCheckedChange(value === true)}
+        className="mt-1 size-5"
+      />
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="rounded-full bg-background font-black" translate="no">
+            {symptom.code}
+          </Badge>
+          <Badge variant="secondary" className="rounded-full text-[0.72rem]">
+            {getWeightLabel(symptom.weight)}
+          </Badge>
+        </span>
+        <span className="mt-3 block break-words text-sm font-bold leading-6 text-foreground sm:text-base">
+          {symptom.name}
+        </span>
+        <span className="mt-1 block break-words text-sm leading-6 text-muted-foreground">
+          {symptom.name_en}
+        </span>
+      </span>
+    </label>
+  );
+}
+
+function SymptomSkeleton() {
+  return (
+    <div className="space-y-4" aria-live="polite" aria-label="Memuat daftar gejala">
+      {["skeleton-1", "skeleton-2", "skeleton-3"].map((item) => (
+        <div key={item} className="rounded-3xl border border-border/80 bg-background/55 p-5">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-10 rounded-2xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-52" />
+              <Skeleton className="h-3 w-72 max-w-full" />
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Skeleton className="h-28 rounded-2xl" />
+            <Skeleton className="h-28 rounded-2xl" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SelectedSymptomsCard({ selectedDetails }: { selectedDetails: Symptom[] }) {
+  return (
+    <div className="rounded-3xl border border-border/80 bg-background/55 p-4">
+      <div className="flex items-center gap-2">
+        <ClipboardList className="size-4 text-primary" aria-hidden="true" />
+        <h3 className="font-black text-foreground">Gejala Terpilih</h3>
+      </div>
+      {selectedDetails.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {selectedDetails.map((symptom) => (
+            <Badge key={symptom.code} variant="outline" className="h-auto rounded-full bg-card px-3 py-1.5 text-left">
+              <span className="font-black text-primary" translate="no">
+                {symptom.code}
+              </span>
+              <span className="max-w-[14rem] truncate">{symptom.name}</span>
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">Belum ada gejala dipilih.</p>
+      )}
+    </div>
+  );
+}
+
 function DiagnosisResultCard({ diagnosis }: { diagnosis: DiagnosisResult | null }) {
   if (!diagnosis) {
     return (
-      <div className="mt-5 rounded-3xl border border-dashed border-white/15 bg-slate-950/35 p-5 text-sm leading-6 text-slate-400">
+      <div className="rounded-3xl border border-dashed border-border bg-background/55 p-5 text-sm leading-6 text-muted-foreground">
+        <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+          <Sparkles className="size-5" aria-hidden="true" />
+        </div>
         Hasil diagnosa akan tampil di sini setelah gejala dipilih dan diproses.
       </div>
     );
@@ -430,33 +574,44 @@ function DiagnosisResultCard({ diagnosis }: { diagnosis: DiagnosisResult | null 
 
   const isRbr = diagnosis.method === "RBR";
   const tone = diagnosis.requires_review
-    ? "border-amber-300/40 bg-amber-300/10 text-amber-50"
+    ? "border-amber-300 bg-amber-50 text-amber-950"
     : isRbr
-      ? "border-teal-300/40 bg-teal-300/10 text-teal-50"
-      : "border-sky-300/40 bg-sky-300/10 text-sky-50";
+      ? "border-primary/40 bg-cyan-50 text-cyan-950"
+      : "border-emerald-300 bg-emerald-50 text-emerald-950";
 
   return (
-    <div className={`mt-5 rounded-3xl border p-5 ${tone}`} aria-live="polite">
+    <div className={cn("rounded-3xl border p-5", tone)} aria-live="polite">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em]" translate="no">
+        <Badge className="rounded-full bg-card text-foreground shadow-sm" translate="no">
           {diagnosis.method}
-        </span>
-        <span className="text-sm font-semibold">
+        </Badge>
+        <span className="flex items-center gap-2 text-sm font-bold">
+          {diagnosis.requires_review ? (
+            <ShieldAlert className="size-4" aria-hidden="true" />
+          ) : (
+            <CheckCircle2 className="size-4" aria-hidden="true" />
+          )}
           {diagnosis.requires_review ? "Memerlukan Review Pakar" : "Rekomendasi Siap"}
         </span>
       </div>
-      <h3 className="mt-4 text-2xl font-black">
-        {diagnosis.disease_name ?? "Tidak ada diagnosa"}
-      </h3>
+      <h3 className="mt-4 text-2xl font-black">{diagnosis.disease_name ?? "Tidak ada diagnosa"}</h3>
       {diagnosis.disease_code ? (
-        <p className="mt-1 text-sm opacity-80" translate="no">{diagnosis.disease_code}</p>
+        <p className="mt-1 text-sm font-semibold opacity-80" translate="no">
+          {diagnosis.disease_code}
+        </p>
       ) : null}
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Metric label="Metode" value={isRbr ? "RBR" : "CBR"} helper={isRbr ? "Rule matched exactly" : "Case similarity used"} />
         <Metric
+          icon={Layers3}
+          label="Metode"
+          value={isRbr ? "RBR" : "CBR"}
+          helper={isRbr ? "Aturan cocok penuh" : "Similarity kasus terdekat"}
+        />
+        <Metric
+          icon={Gauge}
           label="Similarity"
           value={diagnosis.similarity === null ? "-" : percentFormatter.format(diagnosis.similarity)}
-          helper={diagnosis.similarity === null ? "CBR tidak dijalankan" : "Weighted nearest neighbor"}
+          helper={diagnosis.similarity === null ? "CBR tidak dijalankan" : "Nearest neighbor berbobot"}
         />
       </div>
       {diagnosis.message ? <p className="mt-4 text-sm leading-6 opacity-90">{diagnosis.message}</p> : null}
@@ -464,102 +619,189 @@ function DiagnosisResultCard({ diagnosis }: { diagnosis: DiagnosisResult | null 
   );
 }
 
-function Metric({ label, value, helper }: { label: string; value: string; helper: string }) {
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  helper,
+}: {
+  icon: typeof Gauge;
+  label: string;
+  value: string;
+  helper: string;
+}) {
   return (
-    <div className="rounded-2xl bg-slate-950/30 p-4">
-      <p className="text-xs uppercase tracking-[0.2em] opacity-70">{label}</p>
-      <p className="mt-1 text-xl font-black tabular-nums">{value}</p>
-      <p className="mt-1 text-xs opacity-70">{helper}</p>
+    <div className="rounded-2xl bg-card/70 p-4 shadow-sm shadow-cyan-900/5">
+      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] opacity-75">
+        <Icon className="size-3.5" aria-hidden="true" />
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-black tabular-nums">{value}</p>
+      <p className="mt-1 text-xs leading-5 opacity-75">{helper}</p>
+    </div>
+  );
+}
+
+function ExpertRetainPanel({
+  diagnosis,
+  isSavingCase,
+  saveMessage,
+  onSave,
+}: {
+  diagnosis: DiagnosisResult;
+  isSavingCase: boolean;
+  saveMessage: string | null;
+  onSave: () => void;
+}) {
+  return (
+    <div className="rounded-3xl border border-amber-300/60 bg-amber-50 p-4 text-amber-950">
+      <div className="flex items-center gap-2">
+        <BadgeCheck className="size-4" aria-hidden="true" />
+        <h3 className="font-black">Panel Retain Pakar</h3>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-amber-900">
+        Simpan kombinasi gejala ini ke basis kasus jika pakar menyetujui hasil diagnosa.
+      </p>
+      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-amber-800">Kode Penyakit</dt>
+          <dd className="font-black" translate="no">
+            {diagnosis.disease_code}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-amber-800">Nama Penyakit</dt>
+          <dd className="font-black">{diagnosis.disease_name}</dd>
+        </div>
+      </dl>
+      <Button
+        type="button"
+        className="mt-4 h-11 w-full rounded-full bg-amber-700 text-white hover:bg-amber-800"
+        onClick={onSave}
+        disabled={isSavingCase}
+      >
+        {isSavingCase ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}
+        {isSavingCase ? "Menyimpan..." : "Simpan ke Basis Kasus"}
+      </Button>
+      {saveMessage ? (
+        <p className="mt-3 text-sm leading-6 text-amber-950" aria-live="polite">
+          {saveMessage}
+        </p>
+      ) : null}
     </div>
   );
 }
 
 function MatchedRuleDetail({ rule }: { rule: MatchedRule }) {
   return (
-    <section className="rounded-[2rem] border border-teal-300/30 bg-teal-300/10 p-5 sm:p-6">
-      <h2 className="text-xl font-black text-teal-50">Detail Aturan RBR</h2>
-      <p className="mt-2 text-sm text-teal-100/80">Aturan terpenuhi 100%, sehingga CBR tidak dijalankan.</p>
-      <div className="mt-4 rounded-3xl bg-slate-950/35 p-4">
-        <p className="text-sm text-teal-100/70">Aturan Cocok</p>
-        <p className="mt-1 text-lg font-black text-white" translate="no">{rule.rule_code}</p>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {rule.matched_symptoms.map((symptomCode) => (
-          <span key={symptomCode} className="rounded-full bg-teal-200 px-3 py-1 text-sm font-bold text-slate-950" translate="no">
-            {symptomCode}
-          </span>
-        ))}
-      </div>
-    </section>
+    <Card className="border-primary/30 bg-cyan-50 shadow-sm shadow-cyan-950/5">
+      <CardHeader>
+        <CardTitle className="text-xl font-black text-cyan-950">Detail Aturan RBR</CardTitle>
+        <CardDescription className="text-cyan-800">
+          Aturan terpenuhi 100%, sehingga CBR tidak dijalankan.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-3xl bg-card p-4">
+          <p className="text-sm text-muted-foreground">Aturan Cocok</p>
+          <p className="mt-1 text-lg font-black text-foreground" translate="no">
+            {rule.rule_code}
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {rule.matched_symptoms.map((symptomCode) => (
+            <Badge key={symptomCode} className="rounded-full bg-primary text-primary-foreground" translate="no">
+              {symptomCode}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 function CbrDetails({ details }: { details: PerDiseaseDetail[] }) {
+  const defaultValue = details.find((disease) => disease.is_winner)?.code;
+
   return (
-    <section className="rounded-[2rem] border border-white/10 bg-white/[0.07] p-5 sm:p-6">
-      <h2 className="text-xl font-black text-white">Detail Similarity CBR</h2>
-      <p className="mt-2 text-sm text-slate-400">Nearest Neighbor Retrieval calculation by disease.</p>
-      <div className="mt-5 space-y-3">
-        {details.map((disease) => (
-          <details
-            key={disease.code}
-            className={`rounded-3xl border p-4 ${
-              disease.is_winner
-                ? "border-teal-300/50 bg-teal-300/10"
-                : "border-white/10 bg-slate-950/35"
-            }`}
-            open={disease.is_winner}
-          >
-            <summary className="cursor-pointer list-none focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="truncate font-black text-white">
-                    <span translate="no">{disease.code}</span> - {disease.name}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {disease.is_winner ? "Kasus terdekat" : "Kandidat pembanding"}
-                  </p>
-                </div>
-                <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-black text-teal-100 tabular-nums">
-                  {percentFormatter.format(disease.similarity)}
-                </span>
-              </div>
-            </summary>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-teal-300" style={{ width: `${Math.round(disease.similarity * 100)}%` }} />
-            </div>
-            <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-              <SymptomCodeList title="Matched Symptoms" codes={disease.matched} />
-              <SymptomCodeList title="Unmatched Symptoms" codes={disease.unmatched} />
-            </div>
-            <div className="mt-4 rounded-2xl bg-slate-950/60 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Formula</p>
-              <code className="mt-2 block break-words text-sm text-slate-200">{disease.formula}</code>
-              <p className="mt-3 text-sm text-slate-400">
-                Matched weight: {disease.matched_weight} / {disease.total_weight}
-              </p>
-            </div>
-          </details>
-        ))}
-      </div>
-    </section>
+    <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
+      <CardHeader>
+        <CardTitle className="text-xl font-black">Detail Similarity CBR</CardTitle>
+        <CardDescription className="leading-6">
+          Perhitungan Nearest Neighbor Retrieval per diagnosis kandidat.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Accordion type="single" collapsible defaultValue={defaultValue} className="space-y-3">
+          {details.map((disease) => {
+            const progressValue = Math.round(disease.similarity * 100);
+
+            return (
+              <AccordionItem
+                key={disease.code}
+                value={disease.code}
+                className={cn(
+                  "rounded-3xl border px-4",
+                  disease.is_winner ? "border-primary/50 bg-secondary/70" : "border-border bg-background/55",
+                )}
+              >
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex min-w-0 flex-1 items-center justify-between gap-4 pr-3">
+                    <div className="min-w-0 text-left">
+                      <p className="truncate font-black text-foreground">
+                        <span translate="no">{disease.code}</span> - {disease.name}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {disease.is_winner ? "Kasus terdekat" : "Kandidat pembanding"}
+                      </p>
+                    </div>
+                    <Badge className="rounded-full bg-card text-primary tabular-nums">
+                      {percentFormatter.format(disease.similarity)}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <Progress value={progressValue} className="h-2 bg-card" aria-label={`Similarity ${disease.name}`} />
+                  <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                    <SymptomCodeList title="Matched Symptoms" codes={disease.matched} tone="success" />
+                    <SymptomCodeList title="Unmatched Symptoms" codes={disease.unmatched} tone="muted" />
+                  </div>
+                  <div className="mt-4 rounded-2xl bg-card p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Formula</p>
+                    <code className="mt-2 block break-words text-sm text-foreground">{disease.formula}</code>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Matched weight: {disease.matched_weight} / {disease.total_weight}
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 }
 
-function SymptomCodeList({ title, codes }: { title: string; codes: string[] }) {
+function SymptomCodeList({ title, codes, tone }: { title: string; codes: string[]; tone: "success" | "muted" }) {
   return (
     <div>
-      <h3 className="font-bold text-white">{title}</h3>
+      <h3 className="font-black text-foreground">{title}</h3>
       {codes.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {codes.map((code) => (
-            <span key={code} className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-xs text-slate-200" translate="no">
+            <Badge
+              key={code}
+              variant={tone === "success" ? "default" : "outline"}
+              className={cn("rounded-full", tone === "success" ? "bg-accent text-accent-foreground" : "bg-card")}
+              translate="no"
+            >
               {code}
-            </span>
+            </Badge>
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">-</p>
+        <p className="mt-2 text-sm text-muted-foreground">-</p>
       )}
     </div>
   );
