@@ -1,39 +1,33 @@
-import {
-  Activity,
-  ArrowRight,
-  ClipboardCheck,
-  GitBranch,
-  ShieldCheck,
-  Stethoscope,
-} from "lucide-react";
+import Link from "next/link";
+import { Activity, ArrowRight, ClipboardCheck, GitBranch, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-import DiagnosisPanel from "./diagnosis-panel";
+import AppHeader from "./app-header";
 
 const METHOD_CARDS = [
   {
-    title: "Rule-Based Reasoning",
+    title: "1. RBR memeriksa aturan",
     label: "RBR",
-    description: "Forward Chaining memeriksa apakah semua gejala dalam aturan terpenuhi.",
-    helper: "Exact rule match first",
+    description: "Forward Chaining mencoba menemukan aturan yang cocok 100% dari gejala yang dipilih.",
+    helper: "Jika cocok penuh, hasil langsung diberikan.",
     icon: GitBranch,
   },
   {
-    title: "Case-Based Reasoning",
+    title: "2. CBR membandingkan kasus",
     label: "CBR",
-    description: "Nearest Neighbor Retrieval menghitung similarity berbobot saat RBR tidak cocok penuh.",
-    helper: "Weighted similarity fallback",
+    description: "Jika RBR tidak cocok penuh, sistem menghitung similarity ke basis kasus dengan bobot gejala.",
+    helper: "Hasil terdekat menjadi rekomendasi diagnosis.",
     icon: Activity,
   },
   {
-    title: "Review Pakar",
+    title: "3. Pakar meninjau kasus rendah",
     label: "Revise",
-    description: "Kasus dengan similarity rendah ditandai untuk validasi pakar.",
-    helper: "Human review when confidence is low",
+    description: "Similarity rendah ditandai agar pakar dapat melakukan validasi sebelum kasus disimpan.",
+    helper: "Menjaga rekomendasi tetap hati-hati dan dapat ditelusuri.",
     icon: ClipboardCheck,
   },
 ];
@@ -41,97 +35,80 @@ const METHOD_CARDS = [
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden text-foreground">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:outline-none focus-visible:ring-4 focus-visible:ring-ring/35"
-      >
-        Lewati ke konten utama
-      </a>
+      <AppHeader actionHref="/diagnose" actionLabel="Mulai Diagnosa" />
 
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/82 backdrop-blur-xl supports-[backdrop-filter]:bg-background/72">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-cyan-900/15">
-              <Stethoscope className="size-5" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">
-                Clinical Expert System
-              </p>
-              <p className="mt-1 text-base font-bold text-foreground sm:text-lg">Sistem Pakar Gizi Buruk</p>
+      <main id="main-content" className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <section className="py-10 sm:py-16">
+          <Badge variant="secondary" className="mb-5 h-8 rounded-full px-4 text-sm text-secondary-foreground">
+            Diagnosa dini untuk balita
+          </Badge>
+          <h1 className="max-w-4xl text-balance text-4xl font-black leading-[1.05] text-foreground sm:text-5xl lg:text-6xl">
+            Sistem pakar yang menjelaskan proses diagnosis gizi buruk secara singkat dan transparan.
+          </h1>
+          <p className="mt-5 max-w-3xl text-pretty text-lg leading-8 text-muted-foreground">
+            Aplikasi ini membantu memilih gejala klinis, menjalankan aturan pakar terlebih dahulu, lalu memakai
+            pembandingan kasus jika aturan tidak terpenuhi penuh.
+          </p>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button
+              asChild
+              size="lg"
+              className="h-12 rounded-full bg-primary px-6 text-base shadow-lg shadow-cyan-900/15 hover:bg-cyan-800"
+            >
+              <Link href="/diagnose">
+                Mulai Diagnosa
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <ShieldCheck className="size-4 text-accent" aria-hidden="true" />
+              Hasil adalah dukungan keputusan, bukan pengganti pemeriksaan klinis.
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge className="h-7 rounded-full bg-primary text-primary-foreground">Hybrid RBR + CBR</Badge>
-            <Badge variant="outline" className="h-7 rounded-full bg-card/70 text-foreground">
-              Transparan & terukur
+        </section>
+
+        <Separator />
+
+        <section className="space-y-4 py-10 sm:py-12" aria-labelledby="workflow-title">
+          <div>
+            <Badge variant="outline" className="mb-3 rounded-full bg-card/80">
+              Alur singkat
             </Badge>
-          </div>
-        </div>
-      </header>
-
-      <main id="main-content" className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="grid gap-8 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
-          <div className="max-w-4xl">
-            <Badge variant="secondary" className="mb-5 h-8 rounded-full px-4 text-sm text-secondary-foreground">
-              Diagnosa dini untuk balita
-            </Badge>
-            <h1 className="text-balance text-4xl font-black leading-[1.05] text-foreground sm:text-5xl lg:text-6xl">
-              Analisis gejala gizi buruk dengan alur pakar yang jelas.
-            </h1>
-            <p className="mt-5 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
-              Pilih gejala berdasarkan kategori klinis, lalu sistem menjalankan RBR terlebih dahulu.
-              Jika tidak ada aturan yang cocok penuh, CBR memberi rekomendasi dengan similarity yang bisa ditelusuri.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button
-                asChild
-                size="lg"
-                className="h-12 rounded-full bg-primary px-6 text-base shadow-lg shadow-cyan-900/15 hover:bg-cyan-800"
-              >
-                <a href="#diagnosis-panel">
-                  Mulai Diagnosa
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </a>
-              </Button>
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <ShieldCheck className="size-4 text-accent" aria-hidden="true" />
-                Hasil adalah dukungan keputusan, bukan pengganti pemeriksaan klinis.
-              </div>
-            </div>
+            <h2 id="workflow-title" className="text-2xl font-black sm:text-3xl">
+              Cara sistem mengambil keputusan
+            </h2>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          <div className="space-y-4">
             {METHOD_CARDS.map((card, index) => {
               const Icon = card.icon;
 
               return (
-                <Card key={card.label} className="border-border/80 bg-card/86 shadow-sm shadow-cyan-900/5">
+                <Card key={card.label} className="border-border/80 bg-card/88 shadow-sm shadow-cyan-900/5">
                   <CardHeader>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
-                        <Icon className="size-5" aria-hidden="true" />
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex gap-3">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
+                          <Icon className="size-5" aria-hidden="true" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg font-bold">{card.title}</CardTitle>
+                          <CardDescription className="mt-2 leading-6">{card.description}</CardDescription>
+                        </div>
                       </div>
-                      <Badge variant={index === 0 ? "default" : "outline"} className="rounded-full" translate="no">
+                      <Badge variant={index === 0 ? "default" : "outline"} className="w-fit rounded-full" translate="no">
                         {card.label}
                       </Badge>
                     </div>
-                    <CardTitle className="text-lg font-bold">{card.title}</CardTitle>
-                    <CardDescription className="leading-6">{card.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Separator className="mb-3" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      {card.helper}
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">{card.helper}</p>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
         </section>
-
-        <DiagnosisPanel />
       </main>
     </div>
   );

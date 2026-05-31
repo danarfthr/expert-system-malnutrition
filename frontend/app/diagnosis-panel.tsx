@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, startTransition, useEffect, useState } from "react";
+import { FormEvent, startTransition, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Activity,
@@ -150,6 +150,7 @@ export default function DiagnosisPanel() {
   const [isSavingCase, setIsSavingCase] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const resultSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -187,6 +188,18 @@ export default function DiagnosisPanel() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!diagnosis) {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultSectionRef.current?.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [diagnosis]);
 
   function setSymptomSelected(code: string, checked: boolean) {
     setSelectedSymptoms((current) => {
@@ -294,7 +307,7 @@ export default function DiagnosisPanel() {
   const uncategorizedSymptoms = symptoms.filter((symptom) => !CATEGORIZED_CODES.has(symptom.code));
 
   return (
-    <section id="diagnosis-panel" className="grid scroll-mt-24 gap-6 pb-12 lg:grid-cols-[1.14fr_0.86fr]">
+    <section id="diagnosis-panel" className="scroll-mt-28 space-y-6 pb-12">
       <form onSubmit={handleDiagnose}>
         <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
           <CardHeader className="gap-4">
@@ -358,7 +371,7 @@ export default function DiagnosisPanel() {
                         </span>
                       </div>
                     </legend>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-4 space-y-3">
                       {category.symptoms.map((symptom) => (
                         <SymptomOption
                           key={symptom.code}
@@ -375,7 +388,7 @@ export default function DiagnosisPanel() {
               {uncategorizedSymptoms.length > 0 ? (
                 <fieldset className="rounded-3xl border border-border/80 bg-background/55 p-4 sm:p-5">
                   <legend className="px-2 text-base font-black text-foreground">Gejala Lainnya</legend>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-4 space-y-3">
                     {uncategorizedSymptoms.map((symptom) => (
                       <SymptomOption
                         key={symptom.code}
@@ -417,12 +430,12 @@ export default function DiagnosisPanel() {
         </Card>
       </form>
 
-      <aside className="space-y-6">
+      <section ref={resultSectionRef} id="diagnosis-result" className="scroll-mt-28">
         <Card className="border-border/80 bg-card/92 shadow-xl shadow-cyan-950/6">
           <CardHeader>
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <CardTitle className="text-2xl font-black">Ringkasan</CardTitle>
+                <CardTitle className="text-2xl font-black">Ringkasan & Hasil</CardTitle>
                 <CardDescription className="mt-1 leading-6">
                   Hasil diagnosis, gejala terpilih, dan mode retain pakar.
                 </CardDescription>
@@ -458,10 +471,10 @@ export default function DiagnosisPanel() {
             ) : null}
           </CardContent>
         </Card>
+      </section>
 
-        {diagnosis?.matched_rule ? <MatchedRuleDetail rule={diagnosis.matched_rule} /> : null}
-        {diagnosis?.per_disease?.length ? <CbrDetails details={diagnosis.per_disease} /> : null}
-      </aside>
+      {diagnosis?.matched_rule ? <MatchedRuleDetail rule={diagnosis.matched_rule} /> : null}
+      {diagnosis?.per_disease?.length ? <CbrDetails details={diagnosis.per_disease} /> : null}
     </section>
   );
 }
@@ -525,7 +538,7 @@ function SymptomSkeleton() {
               <Skeleton className="h-3 w-72 max-w-full" />
             </div>
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mt-4 space-y-3">
             <Skeleton className="h-28 rounded-2xl" />
             <Skeleton className="h-28 rounded-2xl" />
           </div>
@@ -600,7 +613,7 @@ function DiagnosisResultCard({ diagnosis }: { diagnosis: DiagnosisResult | null 
           {diagnosis.disease_code}
         </p>
       ) : null}
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mt-5 grid gap-3">
         <Metric
           icon={Layers3}
           label="Metode"
@@ -662,7 +675,7 @@ function ExpertRetainPanel({
       <p className="mt-2 text-sm leading-6 text-amber-900">
         Simpan kombinasi gejala ini ke basis kasus jika pakar menyetujui hasil diagnosa.
       </p>
-      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+      <dl className="mt-4 grid gap-3 text-sm">
         <div>
           <dt className="text-amber-800">Kode Penyakit</dt>
           <dd className="font-black" translate="no">
@@ -762,7 +775,7 @@ function CbrDetails({ details }: { details: PerDiseaseDetail[] }) {
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
                   <Progress value={progressValue} className="h-2 bg-card" aria-label={`Similarity ${disease.name}`} />
-                  <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                  <div className="mt-4 grid gap-4 text-sm">
                     <SymptomCodeList title="Matched Symptoms" codes={disease.matched} tone="success" />
                     <SymptomCodeList title="Unmatched Symptoms" codes={disease.unmatched} tone="muted" />
                   </div>
